@@ -1,12 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, redirect, url_for, Response, session
 import csv, io, os
 from datetime import date, datetime
+from functools import wraps
 
 app = Flask(__name__)
+
+# Chave secreta para a sessão de login
+app.secret_key = os.environ.get("SECRET_KEY", "agrofrut-secret-2026")
+
+# Credenciais definidas via variável de ambiente (padrão para desenvolvimento local)
+LOGIN_USER     = os.environ.get("LOGIN_USER", "admin")
+LOGIN_PASSWORD = os.environ.get("LOGIN_PASSWORD", "agrofrut123")
 
 # Lê a URL do banco definida como variável de ambiente no Render.
 # Em desenvolvimento local, cai para SQLite automaticamente.
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+
+def login_required(f):
+    """Decorator que redireciona para /login se o usuário não estiver autenticado."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated
 
 
 def formatar_data_br(data_str):
@@ -139,6 +157,26 @@ def init_db():
 init_db()
 
 
+# ── LOGIN ──────────────────────────────────────────────────────────────────────
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    erro = None
+    if request.method == "POST":
+        if (request.form["usuario"] == LOGIN_USER and
+                request.form["senha"] == LOGIN_PASSWORD):
+            session["logged_in"] = True
+            return redirect(request.args.get("next") or url_for("index"))
+        erro = "Usuário ou senha incorretos."
+    return render_template("login.html", erro=erro)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 # ── HELPERS ────────────────────────────────────────────────────────────────────
 
 def query(sql, params=()):
@@ -185,6 +223,7 @@ def _filtro_periodo(data_ini, data_fim, alias="v"):
 # ── PÁGINA INICIAL ─────────────────────────────────────────────────────────────
 
 @app.route("/")
+@login_required
 def index():
     estoque = query("""
         SELECT e.*, f.nome as fornecedor_nome
@@ -214,6 +253,7 @@ def index():
 # ── ESTOQUE ────────────────────────────────────────────────────────────────────
 
 @app.route("/estoque/add", methods=["POST"])
+@login_required
 def add_estoque():
     produto = request.form["produto"].strip()
     tipo    = request.form["tipo_caixa"]
@@ -237,6 +277,7 @@ def add_estoque():
 
 
 @app.route("/estoque/edit/<int:id>", methods=["POST"])
+@login_required
 def edit_estoque(id):
     execute(
         f"UPDATE estoque SET produto={PH}, tipo_caixa={PH}, quantidade={PH}, fornecedor_id={PH} WHERE id={PH}",
@@ -247,6 +288,7 @@ def edit_estoque(id):
 
 
 @app.route("/estoque/delete/<int:id>")
+@login_required
 def del_estoque(id):
     execute(f"DELETE FROM estoque WHERE id={PH}", (id,))
     return redirect(url_for("index"))
@@ -255,6 +297,7 @@ def del_estoque(id):
 # ── VENDAS ─────────────────────────────────────────────────────────────────────
 
 @app.route("/venda/add", methods=["POST"])
+@login_required
 def add_venda():
     cliente_id = request.form["cliente_id"]
     estoque_id = request.form["estoque_id"]
@@ -277,6 +320,7 @@ def add_venda():
 # ── CLIENTES ───────────────────────────────────────────────────────────────────
 
 @app.route("/clientes")
+@login_required
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
     historico = query("""
@@ -292,6 +336,7 @@ def clientes():
 
 
 @app.route("/clientes/add", methods=["POST"])
+@login_required
 def add_cliente():
     execute(
         f"INSERT INTO clientes (nome, telefone) VALUES ({PH},{PH})",
@@ -301,6 +346,7 @@ def add_cliente():
 
 
 @app.route("/clientes/edit/<int:id>", methods=["POST"])
+@login_required
 def edit_cliente(id):
     execute(
         f"UPDATE clientes SET nome={PH}, telefone={PH} WHERE id={PH}",
@@ -310,6 +356,7 @@ def edit_cliente(id):
 
 
 @app.route("/clientes/delete/<int:id>")
+@login_required
 def del_cliente(id):
     execute(f"DELETE FROM clientes WHERE id={PH}", (id,))
     return redirect(url_for("clientes"))
@@ -318,6 +365,7 @@ def del_cliente(id):
 # ── FORNECEDORES ───────────────────────────────────────────────────────────────
 
 @app.route("/fornecedores")
+@login_required
 def fornecedores():
     lista   = query("SELECT * FROM fornecedores ORDER BY nome")
     estoque = query("SELECT * FROM estoque ORDER BY produto")
@@ -336,6 +384,7 @@ def fornecedores():
 
 
 @app.route("/fornecedores/add", methods=["POST"])
+@login_required
 def add_fornecedor():
     execute(
         f"INSERT INTO fornecedores (nome, telefone, produto) VALUES ({PH},{PH},{PH})",
@@ -345,6 +394,7 @@ def add_fornecedor():
 
 
 @app.route("/fornecedores/edit/<int:id>", methods=["POST"])
+@login_required
 def edit_fornecedor(id):
     execute(
         f"UPDATE fornecedores SET nome={PH}, telefone={PH}, produto={PH} WHERE id={PH}",
@@ -354,6 +404,7 @@ def edit_fornecedor(id):
 
 
 @app.route("/fornecedores/delete/<int:id>")
+@login_required
 def del_fornecedor(id):
     execute(f"DELETE FROM fornecedores WHERE id={PH}", (id,))
     return redirect(url_for("fornecedores"))
@@ -362,6 +413,7 @@ def del_fornecedor(id):
 # ── COMPRAS (entrada de mercadoria do fornecedor) ──────────────────────────────
 
 @app.route("/compra/add", methods=["POST"])
+@login_required
 def add_compra():
     fornecedor_id = request.form["fornecedor_id"]
     estoque_id    = request.form["estoque_id"]
@@ -381,6 +433,7 @@ def add_compra():
 
 
 @app.route("/compra/delete/<int:id>")
+@login_required
 def del_compra(id):
     # Estorna a quantidade no estoque antes de deletar o registro
     compra = query(f"SELECT estoque_id, quantidade FROM compras WHERE id={PH}", (id,))
@@ -396,6 +449,7 @@ def del_compra(id):
 # ── RELATÓRIO ──────────────────────────────────────────────────────────────────
 
 @app.route("/relatorio")
+@login_required
 def relatorio():
     data_ini   = request.args.get("data_ini", "")
     data_fim   = request.args.get("data_fim", str(date.today()))
@@ -410,6 +464,12 @@ def relatorio():
         params_v.append(cliente_id)
 
     todos_clientes = query("SELECT id, nome FROM clientes ORDER BY nome")
+
+    # Busca o nome do cliente filtrado para exibir no cabeçalho
+    nome_cliente_filtro = ""
+    if cliente_id:
+        c = query(f"SELECT nome FROM clientes WHERE id={PH}", (cliente_id,))
+        nome_cliente_filtro = c[0]["nome"] if c else ""
 
     vendas = query(f"""
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
@@ -459,12 +519,14 @@ def relatorio():
         vendas=vendas, faturamento=faturamento,
         por_produto=por_produto, estoque=estoque,
         compras=compras, custo_total=custo_total, margem=margem,
-        data_ini=data_ini, data_fim=data_fim, cliente_id=cliente_id,
-        todos_clientes=todos_clientes,
+        data_ini=data_ini, data_fim=data_fim,
+        cliente_id=cliente_id, todos_clientes=todos_clientes,
+        nome_cliente_filtro=nome_cliente_filtro,
         formatar_data_br=formatar_data_br)
 
 
 @app.route("/relatorio/csv")
+@login_required
 def relatorio_csv():
     data_ini = request.args.get("data_ini", "")
     data_fim = request.args.get("data_fim", str(date.today()))
