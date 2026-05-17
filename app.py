@@ -513,5 +513,8 @@ def relatorio_csv():
     )
 
 
+# Propaga exceções para mostrar o erro real no navegador em vez de página genérica
+app.config["PROPAGATE_EXCEPTIONS"] = True
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
