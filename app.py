@@ -1,5 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, Response
-import csv, io, os
+
+import os
+from flask import Flask, render_template, request, redirect, url_for, Response, session, flash
+from flask_wtf import CSRFProtect
+from login_form import LoginForm
+import csv, io
 
 from datetime import date, datetime
 def formatar_data_br(data_str):
@@ -11,11 +15,54 @@ def formatar_data_br(data_str):
     except Exception:
         return str(data_str)
 
+
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'troque-para-uma-chave-secreta')
+csrf = CSRFProtect(app)
 
 # Lê a URL do banco definida como variável de ambiente no Render.
 # Em desenvolvimento local, cai para SQLite automaticamente.
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# Usuário e senha do login
+LOGIN_USER = os.environ.get('LOGIN_USER', 'admin')
+LOGIN_PASSWORD = os.environ.get('LOGIN_PASSWORD', 'senha123')
+def login_required(view_func):
+    from functools import wraps
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login', next=request.path))
+        return view_func(*args, **kwargs)
+    return wrapped_view
+
+# ── PÁGINA INICIAL ─────────────────────────────────────────────────────────────
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        if username == LOGIN_USER and password == LOGIN_PASSWORD:
+            session['logged_in'] = True
+            flash('Login realizado com sucesso!', 'success')
+            next_url = request.args.get('next') or url_for('index')
+            return redirect(next_url)
+        else:
+            flash('Usuário ou senha inválidos.', 'danger')
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Logout realizado.', 'info')
+    return redirect(url_for('login'))
+
 
 if DATABASE_URL:
     import psycopg2
@@ -183,6 +230,7 @@ def _filtro_periodo(data_ini, data_fim, alias="v"):
 # ── PÁGINA INICIAL ─────────────────────────────────────────────────────────────
 
 @app.route("/")
+@login_required
 def index():
     estoque      = query(f"""
         SELECT e.*, f.nome as fornecedor_nome
@@ -212,6 +260,7 @@ def index():
 # ── ESTOQUE ────────────────────────────────────────────────────────────────────
 
 @app.route("/estoque/add", methods=["POST"])
+@login_required
 def add_estoque():
     produto = request.form["produto"].strip()
     tipo    = request.form["tipo_caixa"]
@@ -235,6 +284,7 @@ def add_estoque():
 
 
 @app.route("/estoque/edit/<int:id>", methods=["POST"])
+@login_required
 def edit_estoque(id):
     execute(
         f"UPDATE estoque SET produto={PH}, tipo_caixa={PH}, quantidade={PH}, fornecedor_id={PH} WHERE id={PH}",
@@ -245,6 +295,7 @@ def edit_estoque(id):
 
 
 @app.route("/estoque/delete/<int:id>")
+@login_required
 def del_estoque(id):
     execute(f"DELETE FROM estoque WHERE id={PH}", (id,))
     return redirect(url_for("index"))
@@ -253,6 +304,7 @@ def del_estoque(id):
 # ── VENDAS ─────────────────────────────────────────────────────────────────────
 
 @app.route("/venda/add", methods=["POST"])
+@login_required
 def add_venda():
     cliente_id = request.form["cliente_id"]
     estoque_id = request.form["estoque_id"]
@@ -275,6 +327,7 @@ def add_venda():
 # ── CLIENTES ───────────────────────────────────────────────────────────────────
 
 @app.route("/clientes")
+@login_required
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
     historico = query("""
@@ -289,6 +342,7 @@ def clientes():
 
 
 @app.route("/clientes/add", methods=["POST"])
+@login_required
 def add_cliente():
     execute(
         f"INSERT INTO clientes (nome, telefone) VALUES ({PH},{PH})",
@@ -298,6 +352,7 @@ def add_cliente():
 
 
 @app.route("/clientes/edit/<int:id>", methods=["POST"])
+@login_required
 def edit_cliente(id):
     execute(
         f"UPDATE clientes SET nome={PH}, telefone={PH} WHERE id={PH}",
@@ -307,6 +362,7 @@ def edit_cliente(id):
 
 
 @app.route("/clientes/delete/<int:id>")
+@login_required
 def del_cliente(id):
     execute(f"DELETE FROM clientes WHERE id={PH}", (id,))
     return redirect(url_for("clientes"))
@@ -315,6 +371,7 @@ def del_cliente(id):
 # ── FORNECEDORES ───────────────────────────────────────────────────────────────
 
 @app.route("/fornecedores")
+@login_required
 def fornecedores():
     lista    = query("SELECT * FROM fornecedores ORDER BY nome")
     estoque  = query("SELECT * FROM estoque ORDER BY produto")
@@ -334,6 +391,7 @@ def fornecedores():
 
 
 @app.route("/fornecedores/add", methods=["POST"])
+@login_required
 def add_fornecedor():
     execute(
         f"INSERT INTO fornecedores (nome, telefone, produto) VALUES ({PH},{PH},{PH})",
@@ -343,6 +401,7 @@ def add_fornecedor():
 
 
 @app.route("/fornecedores/edit/<int:id>", methods=["POST"])
+@login_required
 def edit_fornecedor(id):
     execute(
         f"UPDATE fornecedores SET nome={PH}, telefone={PH}, produto={PH} WHERE id={PH}",
@@ -352,6 +411,7 @@ def edit_fornecedor(id):
 
 
 @app.route("/fornecedores/delete/<int:id>")
+@login_required
 def del_fornecedor(id):
     execute(f"DELETE FROM fornecedores WHERE id={PH}", (id,))
     return redirect(url_for("fornecedores"))
@@ -360,6 +420,7 @@ def del_fornecedor(id):
 # ── COMPRAS (entrada de mercadoria do fornecedor) ──────────────────────────────
 
 @app.route("/compra/add", methods=["POST"])
+@login_required
 def add_compra():
     fornecedor_id = request.form["fornecedor_id"]
     estoque_id    = request.form["estoque_id"]
@@ -380,6 +441,7 @@ def add_compra():
 
 
 @app.route("/compra/delete/<int:id>")
+@login_required
 def del_compra(id):
     # Estorna a quantidade no estoque antes de deletar
     compra = query(f"SELECT estoque_id, quantidade FROM compras WHERE id={PH}", (id,))
@@ -395,6 +457,7 @@ def del_compra(id):
 # ── RELATÓRIO ──────────────────────────────────────────────────────────────────
 
 @app.route("/relatorio")
+@login_required
 def relatorio():
     data_ini = request.args.get("data_ini", "")
     data_fim = request.args.get("data_fim", str(date.today()))

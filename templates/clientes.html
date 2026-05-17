@@ -10,6 +10,7 @@
   <div class="panel">
     <h2>➕ Novo Cliente</h2>
     <form action="/clientes/add" method="POST">
+      {{ csrf_token() }}
       <input name="nome" placeholder="Nome completo" required>
       <input name="telefone" placeholder="Telefone (opcional)">
       <button type="submit">Cadastrar</button>
@@ -28,12 +29,11 @@
             <td>{{ c.nome }}</td>
             <td>{{ c.telefone or '—' }}</td>
             <td class="td-actions">
-              <button class="btn-edit" onclick="openModal('Editar Cliente', `
-                <form action='/clientes/edit/{{ c.id }}' method='POST'>
-                  <input name='nome' value='{{ c.nome }}' required>
-                  <input name='telefone' value='{{ c.telefone or '' }}' placeholder='Telefone'>
-                  <button type='submit'>Salvar</button>
-                </form>`)">✏️</button>
+              <button class="btn-edit"
+                data-id="{{ c.id }}"
+                data-nome="{{ c.nome }}"
+                data-telefone="{{ c.telefone or '' }}"
+                onclick="openClienteModal(this)">✏️</button>
               <a href="/clientes/delete/{{ c.id }}" class="btn danger btn-sm" onclick="return confirm('Remover cliente?')">✕</a>
             </td>
           </tr>
@@ -73,4 +73,19 @@
   </div>
 </div>
 
+<script>
+function openClienteModal(btn) {
+  const id = btn.dataset.id;
+  const nome = btn.dataset.nome;
+  const telefone = btn.dataset.telefone;
+  const form = `
+    <form action='/clientes/edit/${id}' method='POST'>
+      {{ csrf_token() }}
+      <input name='nome' value='${nome.replace(/'/g, "&#x27;").replace(/"/g, '&quot;')}' required>
+      <input name='telefone' value='${telefone.replace(/'/g, "&#x27;").replace(/"/g, '&quot;')}' placeholder='Telefone'>
+      <button type='submit'>Salvar</button>
+    </form>`;
+  openModal('Editar Cliente', form);
+}
+</script>
 {% endblock %}
