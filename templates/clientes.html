@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header" style="margin-top:.8rem">
+  <h1>👤 Clientes</h1>
+</div>
+
+<div class="panels">
+  <!-- CADASTRO -->
+  <div class="panel">
+    <h2>➕ Novo Cliente</h2>
+    <form action="/clientes/add" method="POST">
+      <input name="nome" placeholder="Nome completo" required>
+      <input name="telefone" placeholder="Telefone (opcional)">
+      <button type="submit">Cadastrar</button>
+    </form>
+  </div>
+
+  <!-- LISTA -->
+  <div class="panel">
+    <h2>📋 Clientes Cadastrados</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Telefone</th><th></th></tr></thead>
+        <tbody>
+          {% for c in clientes %}
+          <tr>
+            <td>{{ c.nome }}</td>
+            <td>{{ c.telefone or '—' }}</td>
+            <td class="td-actions">
+              <button class="btn-edit" onclick="openModal('Editar Cliente', `
+                <form action='/clientes/edit/{{ c.id }}' method='POST'>
+                  <input name='nome' value='{{ c.nome }}' required>
+                  <input name='telefone' value='{{ c.telefone or '' }}' placeholder='Telefone'>
+                  <button type='submit'>Salvar</button>
+                </form>`)">✏️</button>
+              <a href="/clientes/delete/{{ c.id }}" class="btn danger btn-sm" onclick="return confirm('Remover cliente?')">✕</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" style="text-align:center;color:#999">Nenhum cliente</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="section-title">🧾 Histórico de Compras</div>
+<div class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Cliente</th><th>Produto</th><th>Caixa</th><th>Qtd</th><th>Valor Unit.</th><th>Total</th><th>Data</th></tr>
+      </thead>
+      <tbody>
+        {% for h in historico %}
+        <tr>
+          <td>{{ h.cliente }}</td>
+          <td>{{ h.produto }}</td>
+          <td>{{ h.tipo_caixa }}</td>
+          <td>{{ h.quantidade }}</td>
+          <td>R$ {{ "%.2f"|format(h.valor_unitario) }}</td>
+          <td>R$ {{ "%.2f"|format(h.quantidade * h.valor_unitario) }}</td>
+          <td>{{ h.data }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:#999">Nenhuma venda registrada</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- DASHBOARD -->
+<div class="dashboard" style="margin-top:.8rem">
+  <div class="card">
+    <h3>💰 Faturamento Total</h3>
+    <div class="value">R$ {{ "%.2f"|format(faturamento) }}</div>
+  </div>
+  <div class="card">
+    <h3>🏆 Mais Vendido</h3>
+    {% if mais_vendido %}
+      <div class="value" style="font-size:1.1rem">{{ mais_vendido.produto }}</div>
+      <div class="sub">{{ mais_vendido.tipo_caixa }} · {{ mais_vendido.total }} cx vendidas</div>
+    {% else %}
+      <div class="sub">Sem vendas ainda</div>
+    {% endif %}
+  </div>
+  <div class="card alert">
+    <h3>⚠️ Estoque Baixo</h3>
+    {% if estoque_baixo %}
+      {% for item in estoque_baixo %}
+        <div class="sub low-stock">{{ item.produto }} ({{ item.tipo_caixa }}): {{ item.quantidade }} cx</div>
+      {% endfor %}
+    {% else %}
+      <div class="sub">Tudo em ordem ✅</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- PANELS -->
+<div class="panels">
+
+  <!-- CADASTRAR CAIXA -->
+  <div class="panel">
+    <h2>📦 Cadastrar Caixa no Estoque</h2>
+    <form action="/estoque/add" method="POST">
+      <input name="produto" placeholder="Nome da fruta / produto" required>
+      <select name="tipo_caixa" required>
+        <option value="">Tipo de caixa</option>
+        <option value="Plástica">Plástica</option>
+        <option value="Papelão">Papelão</option>
+      </select>
+      <select name="fornecedor_id">
+        <option value="">Fornecedor (opcional)</option>
+        {% for f in fornecedores %}
+          <option value="{{ f.id }}">{{ f.nome }}{% if f.produto %} — {{ f.produto }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      <div class="form-row">
+        <input name="quantidade" type="number" min="1" placeholder="Qtd" required>
+        <button type="submit">Adicionar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- REGISTRAR VENDA -->
+  <div class="panel">
+    <h2>🛒 Registrar Saída para Cliente</h2>
+    <form action="/venda/add" method="POST">
+      <select name="cliente_id" required>
+        <option value="">Selecionar cliente</option>
+        {% for c in clientes %}
+          <option value="{{ c.id }}">{{ c.nome }}</option>
+        {% endfor %}
+      </select>
+      <select name="estoque_id" required>
+        <option value="">Selecionar produto</option>
+        {% for e in estoque %}
+          <option value="{{ e.id }}">{{ e.produto }} ({{ e.tipo_caixa }}) — {{ e.quantidade }} cx</option>
+        {% endfor %}
+      </select>
+      <div class="form-row">
+        <input name="quantidade" type="number" min="1" placeholder="Qtd" required>
+        <input name="valor_unitario" type="number" step="0.01" min="0" placeholder="R$ unit." required>
+      </div>
+      <button type="submit">Registrar Saída</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- ESTOQUE ATUAL -->
+<div class="section-title">📋 Estoque Atual</div>
+<div class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Produto</th><th>Tipo Caixa</th><th>Fornecedor</th><th>Qtd</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for e in estoque %}
+        <tr>
+          <td>{{ e.produto }}</td>
+          <td>{{ e.tipo_caixa }}</td>
+          <td>{{ e.fornecedor_nome or '—' }}</td>
+          <td {% if e.quantidade <= 10 %}class="low-stock"{% endif %}>{{ e.quantidade }}</td>
+          <td>
+            {% if e.quantidade <= 10 %}
+              <span class="badge badge-orange">Baixo</span>
+            {% else %}
+              <span class="badge badge-green">OK</span>
+            {% endif %}
+          </td>
+          <td class="td-actions">
+            <button class="btn-edit" onclick="openModal('Editar Produto', `
+              <form action='/estoque/edit/{{ e.id }}' method='POST'>
+                <input name='produto' value='{{ e.produto }}' required>
+                <select name='tipo_caixa' required>
+                  <option value='Plástica' {% if e.tipo_caixa == 'Plástica' %}selected{% endif %}>Plástica</option>
+                  <option value='Papelão' {% if e.tipo_caixa == 'Papelão' %}selected{% endif %}>Papelão</option>
+                </select>
+                <select name='fornecedor_id'>
+                  <option value=''>Sem fornecedor</option>
+                  {% for f in fornecedores %}<option value='{{ f.id }}' {% if e.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
+                </select>
+                <input name='quantidade' type='number' value='{{ e.quantidade }}' required>
+                <button type='submit'>Salvar</button>
+              </form>`)">✏️</button>
+            <a href="/estoque/delete/{{ e.id }}" class="btn danger btn-sm" onclick="return confirm('Remover?')">✕</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:#999">Nenhum item no estoque</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

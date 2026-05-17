@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header" style="margin-top:.8rem">
+  <h1>🚚 Fornecedores</h1>
+</div>
+
+<div class="panels">
+  <!-- CADASTRO -->
+  <div class="panel">
+    <h2>➕ Novo Fornecedor</h2>
+    <form action="/fornecedores/add" method="POST">
+      <input name="nome" placeholder="Nome / Empresa" required>
+      <input name="telefone" placeholder="Telefone (opcional)">
+      <input name="produto" placeholder="Produto fornecido (opcional)">
+      <button type="submit">Cadastrar</button>
+    </form>
+  </div>
+
+  <!-- LISTA -->
+  <div class="panel">
+    <h2>📋 Fornecedores Cadastrados</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Telefone</th><th>Produto</th><th></th></tr></thead>
+        <tbody>
+          {% for f in fornecedores %}
+          <tr>
+            <td>{{ f.nome }}</td>
+            <td>{{ f.telefone or '—' }}</td>
+            <td>{{ f.produto or '—' }}</td>
+            <td class="td-actions">
+              <button class="btn-edit" onclick="openModal('Editar Fornecedor', `
+                <form action='/fornecedores/edit/{{ f.id }}' method='POST'>
+                  <input name='nome' value='{{ f.nome }}' required>
+                  <input name='telefone' value='{{ f.telefone or '' }}' placeholder='Telefone'>
+                  <input name='produto' value='{{ f.produto or '' }}' placeholder='Produto'>
+                  <button type='submit'>Salvar</button>
+                </form>`)">✏️</button>
+              <a href="/fornecedores/delete/{{ f.id }}" class="btn danger btn-sm" onclick="return confirm('Remover fornecedor?')">✕</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" style="text-align:center;color:#999">Nenhum fornecedor</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

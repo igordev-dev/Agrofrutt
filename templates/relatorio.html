@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Cabeçalho da página (oculto na impressão, substituído pelo cabeçalho do relatório) -->
+<div class="page-header" style="margin-top:.8rem">
+  <h1>Relatório Geral</h1>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <button onclick="window.print()" class="btn-rel-action">Imprimir / Salvar PDF</button>
+    <a href="/relatorio/csv?data_ini={{ data_ini }}&data_fim={{ data_fim }}" class="btn-rel-action">Exportar Planilha (.csv)</a>
+  </div>
+</div>
+
+<!-- Filtro de período -->
+<div class="panel" style="margin-bottom:1rem">
+  <form action="/relatorio" method="GET" style="flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:.5rem">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+      <label class="lbl-filtro">De:</label>
+      <input type="date" name="data_ini" value="{{ data_ini }}" style="width:auto">
+      <label class="lbl-filtro">Até:</label>
+      <input type="date" name="data_fim" value="{{ data_fim }}" style="width:auto">
+      <button type="submit">Filtrar</button>
+      <a href="/relatorio" class="btn" style="background:#888">Limpar</a>
+    </div>
+  </form>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ÁREA DE IMPRESSÃO — tudo abaixo desta linha é renderizado no PDF/impressão
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="print-area">
+
+  <!-- Cabeçalho institucional (visível apenas na impressão) -->
+  <div class="print-header">
+    <div class="print-logo">AgroFrut</div>
+    <div class="print-meta">
+      <strong>Relatório Gerencial</strong><br>
+      {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{% else %}Período: todos os registros até {{ data_fim }}{% endif %}<br>
+      Gerado em: {{ data_fim }}
+    </div>
+  </div>
+  <hr class="print-divider">
+
+  <!-- Resumo executivo -->
+  <div class="dashboard">
+    <div class="card">
+      <h3>Faturamento no Período</h3>
+      <div class="value">R$ {{ "%.2f"|format(faturamento) }}</div>
+    </div>
+    <div class="card">
+      <h3>Total de Transações</h3>
+      <div class="value">{{ vendas|length }}</div>
+      <div class="sub">vendas registradas</div>
+    </div>
+    <div class="card">
+      <h3>Itens em Estoque</h3>
+      <div class="value">{{ estoque|length }}</div>
+      <div class="sub">produtos cadastrados</div>
+    </div>
+  </div>
+
+  <!-- Vendas por produto -->
+  <div class="section-title rpt-title">Desempenho por Produto</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Produto</th>
+            <th>Tipo de Caixa</th>
+            <th>Qtd. Vendida</th>
+            <th>Receita (R$)</th>
+            <th>Part. (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in por_produto %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ p.produto }}</td>
+            <td>{{ p.tipo_caixa }}</td>
+            <td>{{ p.qtd_total }}</td>
+            <td>{{ "%.2f"|format(p.receita) }}</td>
+            <td>
+              {% if faturamento > 0 %}
+                {{ "%.1f"|format((p.receita / faturamento) * 100) }}%
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="td-empty">Nenhuma venda no período selecionado.</td></tr>
+          {% endfor %}
+          {% if por_produto %}
+          <tr class="tr-total">
+            <td colspan="3">Total</td>
+            <td>{{ por_produto | sum(attribute='qtd_total') }}</td>
+            <td>{{ "%.2f"|format(faturamento) }}</td>
+            <td>100%</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Posição de estoque -->
+  <div class="section-title rpt-title">Posição de Estoque</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Tipo de Caixa</th>
+            <th>Fornecedor</th>
+            <th>Qtd. Disponível</th>
+            <th>Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in estoque %}
+          <tr>
+            <td>{{ e.produto }}</td>
+            <td>{{ e.tipo_caixa }}</td>
+            <td>{{ e.fornecedor or '—' }}</td>
+            <td {% if e.quantidade <= 10 %}class="low-stock"{% endif %}>{{ e.quantidade }}</td>
+            <td>
+              {% if e.quantidade <= 10 %}
+                <span class="badge badge-orange">Estoque Baixo</span>
+              {% else %}
+                <span class="badge badge-green">Normal</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Histórico detalhado de vendas -->
+  <div class="section-title rpt-title">Histórico Detalhado de Vendas</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Produto</th>
+            <th>Tipo Caixa</th>
+            <th>Fornecedor</th>
+            <th>Qtd.</th>
+            <th>Valor Unit. (R$)</th>
+            <th>Total (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in vendas %}
+          <tr>
+            <td>{{ v.data }}</td>
+            <td>{{ v.cliente }}</td>
+            <td>{{ v.produto }}</td>
+            <td>{{ v.tipo_caixa }}</td>
+            <td>{{ v.fornecedor or '—' }}</td>
+            <td>{{ v.quantidade }}</td>
+            <td>{{ "%.2f"|format(v.valor_unitario) }}</td>
+            <td>{{ "%.2f"|format(v.total) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="td-empty">Nenhuma venda no período selecionado.</td></tr>
+          {% endfor %}
+          {% if vendas %}
+          <tr class="tr-total">
+            <td colspan="7" style="text-align:right">Total do Período:</td>
+            <td>{{ "%.2f"|format(faturamento) }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Rodapé de impressão -->
+  <div class="print-footer">
+    AgroFrut &mdash; Documento gerado automaticamente pelo sistema &mdash; {{ data_fim }}
+  </div>
+
+</div><!-- /print-area -->
+
+<style>
+/* Estilos exclusivos do relatório */
+.lbl-filtro { font-size:.85rem; color:#555; }
+
+.rpt-title {
+  font-size:.9rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--green);
+  border-left: 3px solid var(--green);
+  padding-left: .5rem;
+}
+
+.tr-total td {
+  font-weight: 700;
+  background: #e8f5e9;
+  border-top: 2px solid var(--green);
+}
+
+.td-empty {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 1rem;
+}
+
+/* Cabeçalho e rodapé visíveis apenas na impressão */
+.print-header,
+.print-footer,
+.print-divider { display: none; }
+
+/* ── Regras de impressão ── */
+@media print {
+  /* Oculta elementos de navegação e controles */
+  nav,
+  .page-header,
+  .panel:has(form),
+  .btn-rel-action { display: none !important; }
+
+  body { background: #fff; font-size: 11pt; }
+
+  .container { max-width: 100%; padding: 0; }
+
+  /* Exibe cabeçalho e rodapé institucionais */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: .6rem;
+  }
+
+  .print-logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #2e7d32;
+    letter-spacing: .04em;
+  }
+
+  .print-meta {
+    font-size: .8rem;
+    text-align: right;
+    color: #444;
+    line-height: 1.5;
+  }
+
+  .print-divider {
+    display: block;
+    border: none;
+    border-top: 2px solid #2e7d32;
+    margin-bottom: 1rem;
+  }
+
+  .print-footer {
+    display: block;
+    text-align: center;
+    font-size: .75rem;
+    color: #888;
+    margin-top: 2rem;
+    border-top: 1px solid #ccc;
+    padding-top: .5rem;
+  }
+
+  /* Tabelas limpas para impressão */
+  .panel { box-shadow: none; border: 1px solid #ddd; margin-bottom: .8rem; }
+  table  { font-size: 9pt; }
+  th     { background: #2e7d32 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .rpt-title { color: #000; border-left-color: #2e7d32; }
+  .section-title { margin-top: .8rem; }
+
+  /* Evita quebra de página dentro de linhas de tabela */
+  tr { page-break-inside: avoid; }
+}
+</style>
+
+{% endblock %}
