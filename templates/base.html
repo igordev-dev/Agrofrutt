@@ -33,14 +33,9 @@
 </div>
 
 <script>
-function getCSRF() {
-  // Busca o token CSRF do primeiro input[name=csrf_token] do DOM
-  let token = document.querySelector('input[name=csrf_token]');
-  return token ? `<input type='hidden' name='csrf_token' value='${token.value}'>` : '';
-}
 function openModal(title, bodyHtml) {
   document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').innerHTML = bodyHtml.replace('{{ csrf_token() }}', getCSRF());
+  document.getElementById('modal-body').innerHTML = bodyHtml;
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal(e) {
