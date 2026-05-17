@@ -9,7 +9,6 @@
   </div>
 </div>
 
-<!-- Filtro de período -->
 <div class="panel" style="margin-bottom:1rem">
   <form action="/relatorio" method="GET" style="flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:.5rem">
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
@@ -20,13 +19,11 @@
       <button type="submit">Filtrar</button>
       <a href="/relatorio" class="btn" style="background:#888">Limpar</a>
     </div>
-    </form>
-    {{ csrf_token() }}
+  </form>
 </div>
 
 <div class="print-area">
 
-  <!-- Cabeçalho institucional (visível apenas na impressão) -->
   <div class="print-header">
     <div class="print-logo">AgroFrut</div>
     <div class="print-meta">
@@ -37,7 +34,6 @@
   </div>
   <hr class="print-divider">
 
-  <!-- Resumo executivo -->
   <div class="dashboard">
     <div class="card">
       <h3>Receita (Vendas)</h3>
@@ -68,7 +64,6 @@
     </div>
   </div>
 
-  <!-- Desempenho por produto -->
   <div class="section-title rpt-title">Desempenho por Produto</div>
   <div class="panel">
     <div class="table-wrap">
@@ -102,7 +97,6 @@
     </div>
   </div>
 
-  <!-- Posição de estoque -->
   <div class="section-title rpt-title">Posição de Estoque</div>
   <div class="panel">
     <div class="table-wrap">
@@ -131,7 +125,6 @@
     </div>
   </div>
 
-  <!-- Compras por fornecedor -->
   <div class="section-title rpt-title">Compras por Fornecedor</div>
   <div class="panel">
     <div class="table-wrap">
@@ -164,7 +157,6 @@
     </div>
   </div>
 
-  <!-- Histórico detalhado de vendas -->
   <div class="section-title rpt-title">Histórico Detalhado de Vendas</div>
   <div class="panel">
     <div class="table-wrap">
@@ -206,60 +198,25 @@
 
 <style>
 .lbl-filtro { font-size:.85rem; color:#555; }
-
-.rpt-title {
-  font-size:.9rem;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--green);
-  border-left: 3px solid var(--green);
-  padding-left: .5rem;
-}
-
-.tr-total td {
-  font-weight: 700;
-  background: #e8f5e9;
-  border-top: 2px solid var(--green);
-}
-
-.td-empty {
-  text-align: center;
-  color: #999;
-  font-style: italic;
-  padding: 1rem;
-}
-
-.print-header, .print-footer, .print-divider { display: none; }
+.rpt-title { font-size:.9rem; text-transform:uppercase; letter-spacing:.06em; color:var(--green); border-left:3px solid var(--green); padding-left:.5rem; }
+.tr-total td { font-weight:700; background:#e8f5e9; border-top:2px solid var(--green); }
+.td-empty { text-align:center; color:#999; font-style:italic; padding:1rem; }
+.print-header, .print-footer, .print-divider { display:none; }
 
 @media print {
-  nav, .page-header, .panel:has(form), .btn-rel-action { display: none !important; }
-  body { background: #fff; font-size: 11pt; }
-  .container { max-width: 100%; padding: 0; }
-
-  .print-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: .6rem;
-  }
-  .print-logo { font-size: 1.6rem; font-weight: 800; color: #2e7d32; }
-  .print-meta { font-size: .8rem; text-align: right; color: #444; line-height: 1.5; }
-  .print-divider { display: block; border: none; border-top: 2px solid #2e7d32; margin-bottom: 1rem; }
-  .print-footer {
-    display: block;
-    text-align: center;
-    font-size: .75rem;
-    color: #888;
-    margin-top: 2rem;
-    border-top: 1px solid #ccc;
-    padding-top: .5rem;
-  }
-
-  .panel { box-shadow: none; border: 1px solid #ddd; margin-bottom: .8rem; }
-  table { font-size: 9pt; }
-  th { background: #2e7d32 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .rpt-title { color: #000; border-left-color: #2e7d32; }
-  tr { page-break-inside: avoid; }
+  nav, .page-header, .panel:has(form), .btn-rel-action { display:none !important; }
+  body { background:#fff; font-size:11pt; }
+  .container { max-width:100%; padding:0; }
+  .print-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; }
+  .print-logo { font-size:1.6rem; font-weight:800; color:#2e7d32; }
+  .print-meta { font-size:.8rem; text-align:right; color:#444; line-height:1.5; }
+  .print-divider { display:block; border:none; border-top:2px solid #2e7d32; margin-bottom:1rem; }
+  .print-footer { display:block; text-align:center; font-size:.75rem; color:#888; margin-top:2rem; border-top:1px solid #ccc; padding-top:.5rem; }
+  .panel { box-shadow:none; border:1px solid #ddd; margin-bottom:.8rem; }
+  table { font-size:9pt; }
+  th { background:#2e7d32 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rpt-title { color:#000; border-left-color:#2e7d32; }
+  tr { page-break-inside:avoid; }
 }
 </style>
 
