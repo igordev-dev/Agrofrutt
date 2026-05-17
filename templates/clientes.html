@@ -63,7 +63,7 @@
           <td>{{ h.quantidade }}</td>
           <td>R$ {{ "%.2f"|format(h.valor_unitario) }}</td>
           <td>R$ {{ "%.2f"|format(h.quantidade * h.valor_unitario) }}</td>
-          <td>{{ h.data }}</td>
+          <td>{{ formatar_data_br(h.data) }}</td>
         </tr>
         {% else %}
         <tr><td colspan="7" style="text-align:center;color:#999">Nenhuma venda registrada</td></tr>

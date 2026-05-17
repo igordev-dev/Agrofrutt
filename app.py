@@ -1,6 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, Response
 import csv, io, os
-from datetime import date
+
+from datetime import date, datetime
+def formatar_data_br(data_str):
+    """Converte '2026-05-17' para '17-05-2026'. Aceita None ou vazio."""
+    if not data_str:
+        return ""
+    try:
+        return datetime.strptime(str(data_str), "%Y-%m-%d").strftime("%d-%m-%Y")
+    except Exception:
+        return str(data_str)
 
 app = Flask(__name__)
 
@@ -276,7 +285,7 @@ def clientes():
         JOIN estoque e ON v.estoque_id = e.id
         ORDER BY v.data DESC LIMIT 50
     """)
-    return render_template("clientes.html", clientes=lista, historico=historico)
+    return render_template("clientes.html", clientes=lista, historico=historico, formatar_data_br=formatar_data_br)
 
 
 @app.route("/clientes/add", methods=["POST"])
@@ -321,7 +330,7 @@ def fornecedores():
         ORDER BY c.data DESC LIMIT 50
     """)
     return render_template("fornecedores.html",
-        fornecedores=lista, estoque=estoque, compras=compras)
+        fornecedores=lista, estoque=estoque, compras=compras, formatar_data_br=formatar_data_br)
 
 
 @app.route("/fornecedores/add", methods=["POST"])
@@ -447,7 +456,7 @@ def relatorio():
         vendas=vendas, faturamento=faturamento,
         por_produto=por_produto, estoque=estoque,
         compras=compras, custo_total=custo_total, margem=margem,
-        data_ini=data_ini, data_fim=data_fim)
+        data_ini=data_ini, data_fim=data_fim, formatar_data_br=formatar_data_br)
 
 
 @app.route("/relatorio/csv")

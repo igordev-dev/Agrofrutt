@@ -96,7 +96,7 @@
       <tbody>
         {% for c in compras %}
         <tr>
-          <td>{{ c.data }}</td>
+          <td>{{ formatar_data_br(c.data) }}</td>
           <td>{{ c.fornecedor }}</td>
           <td>{{ c.produto }}</td>
           <td>{{ c.tipo_caixa }}</td>
