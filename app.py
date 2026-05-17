@@ -1,67 +1,22 @@
-
-import os
-from flask import Flask, render_template, request, redirect, url_for, Response, session, flash
-from flask_wtf import CSRFProtect
-from login_form import LoginForm
-import csv, io
-
+from flask import Flask, render_template, request, redirect, url_for, Response
+import csv, io, os
 from datetime import date, datetime
-def formatar_data_br(data_str):
-    """Converte '2026-05-17' para '17-05-2026'. Aceita None ou vazio."""
-    if not data_str:
-        return ""
-    try:
-        return datetime.strptime(str(data_str), "%Y-%m-%d").strftime("%d-%m-%Y")
-    except Exception:
-        return str(data_str)
-
-
-from dotenv import load_dotenv
-load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'troque-para-uma-chave-secreta')
-csrf = CSRFProtect(app)
 
 # Lê a URL do banco definida como variável de ambiente no Render.
 # Em desenvolvimento local, cai para SQLite automaticamente.
-
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# Usuário e senha do login
-LOGIN_USER = os.environ.get('LOGIN_USER', 'admin')
-LOGIN_PASSWORD = os.environ.get('LOGIN_PASSWORD', 'senha123')
-def login_required(view_func):
-    from functools import wraps
-    @wraps(view_func)
-    def wrapped_view(*args, **kwargs):
-        if not session.get('logged_in'):
-            return redirect(url_for('login', next=request.path))
-        return view_func(*args, **kwargs)
-    return wrapped_view
 
-# ── PÁGINA INICIAL ─────────────────────────────────────────────────────────────
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        username = form.username.data
-        password = form.password.data
-        if username == LOGIN_USER and password == LOGIN_PASSWORD:
-            session['logged_in'] = True
-            flash('Login realizado com sucesso!', 'success')
-            next_url = request.args.get('next') or url_for('index')
-            return redirect(next_url)
-        else:
-            flash('Usuário ou senha inválidos.', 'danger')
-    return render_template('login.html', form=form)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('Logout realizado.', 'info')
-    return redirect(url_for('login'))
+def formatar_data_br(data_str):
+    """Converte '2026-05-17' para '17/05/2026'. Aceita None ou vazio."""
+    if not data_str:
+        return ""
+    try:
+        return datetime.strptime(str(data_str), "%Y-%m-%d").strftime("%d/%m/%Y")
+    except Exception:
+        return str(data_str)
 
 
 if DATABASE_URL:
@@ -230,9 +185,8 @@ def _filtro_periodo(data_ini, data_fim, alias="v"):
 # ── PÁGINA INICIAL ─────────────────────────────────────────────────────────────
 
 @app.route("/")
-@login_required
 def index():
-    estoque      = query(f"""
+    estoque = query("""
         SELECT e.*, f.nome as fornecedor_nome
         FROM estoque e LEFT JOIN fornecedores f ON e.fornecedor_id = f.id
         ORDER BY e.produto
@@ -260,7 +214,6 @@ def index():
 # ── ESTOQUE ────────────────────────────────────────────────────────────────────
 
 @app.route("/estoque/add", methods=["POST"])
-@login_required
 def add_estoque():
     produto = request.form["produto"].strip()
     tipo    = request.form["tipo_caixa"]
@@ -284,7 +237,6 @@ def add_estoque():
 
 
 @app.route("/estoque/edit/<int:id>", methods=["POST"])
-@login_required
 def edit_estoque(id):
     execute(
         f"UPDATE estoque SET produto={PH}, tipo_caixa={PH}, quantidade={PH}, fornecedor_id={PH} WHERE id={PH}",
@@ -295,7 +247,6 @@ def edit_estoque(id):
 
 
 @app.route("/estoque/delete/<int:id>")
-@login_required
 def del_estoque(id):
     execute(f"DELETE FROM estoque WHERE id={PH}", (id,))
     return redirect(url_for("index"))
@@ -304,7 +255,6 @@ def del_estoque(id):
 # ── VENDAS ─────────────────────────────────────────────────────────────────────
 
 @app.route("/venda/add", methods=["POST"])
-@login_required
 def add_venda():
     cliente_id = request.form["cliente_id"]
     estoque_id = request.form["estoque_id"]
@@ -327,7 +277,6 @@ def add_venda():
 # ── CLIENTES ───────────────────────────────────────────────────────────────────
 
 @app.route("/clientes")
-@login_required
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
     historico = query("""
@@ -338,11 +287,11 @@ def clientes():
         JOIN estoque e ON v.estoque_id = e.id
         ORDER BY v.data DESC LIMIT 50
     """)
-    return render_template("clientes.html", clientes=lista, historico=historico, formatar_data_br=formatar_data_br)
+    return render_template("clientes.html", clientes=lista, historico=historico,
+                           formatar_data_br=formatar_data_br)
 
 
 @app.route("/clientes/add", methods=["POST"])
-@login_required
 def add_cliente():
     execute(
         f"INSERT INTO clientes (nome, telefone) VALUES ({PH},{PH})",
@@ -352,7 +301,6 @@ def add_cliente():
 
 
 @app.route("/clientes/edit/<int:id>", methods=["POST"])
-@login_required
 def edit_cliente(id):
     execute(
         f"UPDATE clientes SET nome={PH}, telefone={PH} WHERE id={PH}",
@@ -362,7 +310,6 @@ def edit_cliente(id):
 
 
 @app.route("/clientes/delete/<int:id>")
-@login_required
 def del_cliente(id):
     execute(f"DELETE FROM clientes WHERE id={PH}", (id,))
     return redirect(url_for("clientes"))
@@ -371,14 +318,11 @@ def del_cliente(id):
 # ── FORNECEDORES ───────────────────────────────────────────────────────────────
 
 @app.route("/fornecedores")
-@login_required
 def fornecedores():
-    lista    = query("SELECT * FROM fornecedores ORDER BY nome")
-    estoque  = query("SELECT * FROM estoque ORDER BY produto")
-
-    # Histórico de compras com dados completos
+    lista   = query("SELECT * FROM fornecedores ORDER BY nome")
+    estoque = query("SELECT * FROM estoque ORDER BY produto")
     compras = query("""
-        SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
+        SELECT c.id, c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
                c.quantidade, c.valor_unitario,
                (c.quantidade * c.valor_unitario) as total
         FROM compras c
@@ -387,11 +331,11 @@ def fornecedores():
         ORDER BY c.data DESC LIMIT 50
     """)
     return render_template("fornecedores.html",
-        fornecedores=lista, estoque=estoque, compras=compras, formatar_data_br=formatar_data_br)
+        fornecedores=lista, estoque=estoque, compras=compras,
+        formatar_data_br=formatar_data_br)
 
 
 @app.route("/fornecedores/add", methods=["POST"])
-@login_required
 def add_fornecedor():
     execute(
         f"INSERT INTO fornecedores (nome, telefone, produto) VALUES ({PH},{PH},{PH})",
@@ -401,7 +345,6 @@ def add_fornecedor():
 
 
 @app.route("/fornecedores/edit/<int:id>", methods=["POST"])
-@login_required
 def edit_fornecedor(id):
     execute(
         f"UPDATE fornecedores SET nome={PH}, telefone={PH}, produto={PH} WHERE id={PH}",
@@ -411,7 +354,6 @@ def edit_fornecedor(id):
 
 
 @app.route("/fornecedores/delete/<int:id>")
-@login_required
 def del_fornecedor(id):
     execute(f"DELETE FROM fornecedores WHERE id={PH}", (id,))
     return redirect(url_for("fornecedores"))
@@ -420,19 +362,17 @@ def del_fornecedor(id):
 # ── COMPRAS (entrada de mercadoria do fornecedor) ──────────────────────────────
 
 @app.route("/compra/add", methods=["POST"])
-@login_required
 def add_compra():
     fornecedor_id = request.form["fornecedor_id"]
     estoque_id    = request.form["estoque_id"]
     qtd           = int(request.form["quantidade"])
     valor         = float(request.form["valor_unitario"])
 
-    # Registra a compra
+    # Registra a compra e dá entrada automática no estoque
     execute(
         f"INSERT INTO compras (fornecedor_id, estoque_id, quantidade, valor_unitario) VALUES ({PH},{PH},{PH},{PH})",
         (fornecedor_id, estoque_id, qtd, valor)
     )
-    # Dá entrada automática no estoque
     execute(
         f"UPDATE estoque SET quantidade = quantidade + {PH}, fornecedor_id={PH} WHERE id={PH}",
         (qtd, fornecedor_id, estoque_id)
@@ -441,9 +381,8 @@ def add_compra():
 
 
 @app.route("/compra/delete/<int:id>")
-@login_required
 def del_compra(id):
-    # Estorna a quantidade no estoque antes de deletar
+    # Estorna a quantidade no estoque antes de deletar o registro
     compra = query(f"SELECT estoque_id, quantidade FROM compras WHERE id={PH}", (id,))
     if compra:
         execute(
@@ -457,7 +396,6 @@ def del_compra(id):
 # ── RELATÓRIO ──────────────────────────────────────────────────────────────────
 
 @app.route("/relatorio")
-@login_required
 def relatorio():
     data_ini = request.args.get("data_ini", "")
     data_fim = request.args.get("data_fim", str(date.today()))
@@ -465,7 +403,6 @@ def relatorio():
     filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
     filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
 
-    # Vendas do período
     vendas = query(f"""
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario,
@@ -481,7 +418,6 @@ def relatorio():
 
     faturamento = sum(float(r["total"]) for r in vendas)
 
-    # Ranking de produtos vendidos
     por_produto = query(f"""
         SELECT e.produto, e.tipo_caixa,
                SUM(v.quantidade) as qtd_total,
@@ -491,7 +427,6 @@ def relatorio():
         GROUP BY e.produto, e.tipo_caixa ORDER BY qtd_total DESC
     """, params_v)
 
-    # Compras do período (custo)
     compras = query(f"""
         SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
                c.quantidade, c.valor_unitario,
@@ -504,11 +439,8 @@ def relatorio():
     """, params_c)
 
     custo_total = sum(float(r["total"]) for r in compras)
+    margem      = faturamento - custo_total
 
-    # Margem bruta: receita - custo
-    margem = faturamento - custo_total
-
-    # Posição atual do estoque
     estoque = query("""
         SELECT e.produto, e.tipo_caixa, e.quantidade, f.nome as fornecedor
         FROM estoque e LEFT JOIN fornecedores f ON e.fornecedor_id = f.id
@@ -519,7 +451,8 @@ def relatorio():
         vendas=vendas, faturamento=faturamento,
         por_produto=por_produto, estoque=estoque,
         compras=compras, custo_total=custo_total, margem=margem,
-        data_ini=data_ini, data_fim=data_fim, formatar_data_br=formatar_data_br)
+        data_ini=data_ini, data_fim=data_fim,
+        formatar_data_br=formatar_data_br)
 
 
 @app.route("/relatorio/csv")
@@ -572,6 +505,7 @@ def relatorio_csv():
                          f'{float(r["total"]):.2f}'])
 
     output.seek(0)
+    # BOM UTF-8 garante que o Excel abra com acentos corretamente
     return Response(
         "\ufeff" + output.getvalue(),
         mimetype="text/csv",
