@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- Cabeçalho da página (oculto na impressão, substituído pelo cabeçalho do relatório) -->
 <div class="page-header" style="margin-top:.8rem">
   <h1>Relatório Geral</h1>
   <div style="display:flex;gap:.5rem;flex-wrap:wrap">
@@ -24,9 +23,6 @@
   </form>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     ÁREA DE IMPRESSÃO — tudo abaixo desta linha é renderizado no PDF/impressão
-     ═══════════════════════════════════════════════════════════════════════════ -->
 <div class="print-area">
 
   <!-- Cabeçalho institucional (visível apenas na impressão) -->
@@ -34,7 +30,7 @@
     <div class="print-logo">AgroFrut</div>
     <div class="print-meta">
       <strong>Relatório Gerencial</strong><br>
-      {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{% else %}Período: todos os registros até {{ data_fim }}{% endif %}<br>
+      {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{% else %}Todos os registros até {{ data_fim }}{% endif %}<br>
       Gerado em: {{ data_fim }}
     </div>
   </div>
@@ -43,11 +39,24 @@
   <!-- Resumo executivo -->
   <div class="dashboard">
     <div class="card">
-      <h3>Faturamento no Período</h3>
+      <h3>Receita (Vendas)</h3>
       <div class="value">R$ {{ "%.2f"|format(faturamento) }}</div>
     </div>
     <div class="card">
-      <h3>Total de Transações</h3>
+      <h3>Custo (Compras)</h3>
+      <div class="value" style="color:var(--orange)">R$ {{ "%.2f"|format(custo_total) }}</div>
+    </div>
+    <div class="card">
+      <h3>Margem Bruta</h3>
+      <div class="value" style="color:{% if margem >= 0 %}var(--green){% else %}var(--orange){% endif %}">
+        R$ {{ "%.2f"|format(margem) }}
+      </div>
+      {% if faturamento > 0 %}
+      <div class="sub">{{ "%.1f"|format((margem / faturamento) * 100) }}% sobre receita</div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>Transações</h3>
       <div class="value">{{ vendas|length }}</div>
       <div class="sub">vendas registradas</div>
     </div>
@@ -58,20 +67,13 @@
     </div>
   </div>
 
-  <!-- Vendas por produto -->
+  <!-- Desempenho por produto -->
   <div class="section-title rpt-title">Desempenho por Produto</div>
   <div class="panel">
     <div class="table-wrap">
       <table>
         <thead>
-          <tr>
-            <th>#</th>
-            <th>Produto</th>
-            <th>Tipo de Caixa</th>
-            <th>Qtd. Vendida</th>
-            <th>Receita (R$)</th>
-            <th>Part. (%)</th>
-          </tr>
+          <tr><th>#</th><th>Produto</th><th>Tipo de Caixa</th><th>Qtd. Vendida</th><th>Receita (R$)</th><th>Part. (%)</th></tr>
         </thead>
         <tbody>
           {% for p in por_produto %}
@@ -81,11 +83,7 @@
             <td>{{ p.tipo_caixa }}</td>
             <td>{{ p.qtd_total }}</td>
             <td>{{ "%.2f"|format(p.receita) }}</td>
-            <td>
-              {% if faturamento > 0 %}
-                {{ "%.1f"|format((p.receita / faturamento) * 100) }}%
-              {% else %}—{% endif %}
-            </td>
+            <td>{% if faturamento > 0 %}{{ "%.1f"|format((p.receita / faturamento) * 100) }}%{% else %}—{% endif %}</td>
           </tr>
           {% else %}
           <tr><td colspan="6" class="td-empty">Nenhuma venda no período selecionado.</td></tr>
@@ -109,13 +107,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Produto</th>
-            <th>Tipo de Caixa</th>
-            <th>Fornecedor</th>
-            <th>Qtd. Disponível</th>
-            <th>Situação</th>
-          </tr>
+          <tr><th>Produto</th><th>Tipo de Caixa</th><th>Fornecedor</th><th>Qtd. Disponível</th><th>Situação</th></tr>
         </thead>
         <tbody>
           {% for e in estoque %}
@@ -138,22 +130,46 @@
     </div>
   </div>
 
+  <!-- Compras por fornecedor -->
+  <div class="section-title rpt-title">Compras por Fornecedor</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Data</th><th>Fornecedor</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th></tr>
+        </thead>
+        <tbody>
+          {% for c in compras %}
+          <tr>
+            <td>{{ c.data }}</td>
+            <td>{{ c.fornecedor }}</td>
+            <td>{{ c.produto }}</td>
+            <td>{{ c.tipo_caixa }}</td>
+            <td>{{ c.quantidade }}</td>
+            <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
+            <td>{{ "%.2f"|format(c.total) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="td-empty">Nenhuma compra no período selecionado.</td></tr>
+          {% endfor %}
+          {% if compras %}
+          <tr class="tr-total">
+            <td colspan="6" style="text-align:right">Total de Custos:</td>
+            <td>{{ "%.2f"|format(custo_total) }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Histórico detalhado de vendas -->
   <div class="section-title rpt-title">Histórico Detalhado de Vendas</div>
   <div class="panel">
     <div class="table-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Data</th>
-            <th>Cliente</th>
-            <th>Produto</th>
-            <th>Tipo Caixa</th>
-            <th>Fornecedor</th>
-            <th>Qtd.</th>
-            <th>Valor Unit. (R$)</th>
-            <th>Total (R$)</th>
-          </tr>
+          <tr><th>Data</th><th>Cliente</th><th>Produto</th><th>Tipo Caixa</th><th>Fornecedor</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th></tr>
         </thead>
         <tbody>
           {% for v in vendas %}
@@ -181,15 +197,13 @@
     </div>
   </div>
 
-  <!-- Rodapé de impressão -->
   <div class="print-footer">
     AgroFrut &mdash; Documento gerado automaticamente pelo sistema &mdash; {{ data_fim }}
   </div>
 
-</div><!-- /print-area -->
+</div>
 
 <style>
-/* Estilos exclusivos do relatório */
 .lbl-filtro { font-size:.85rem; color:#555; }
 
 .rpt-title {
@@ -214,52 +228,22 @@
   padding: 1rem;
 }
 
-/* Cabeçalho e rodapé visíveis apenas na impressão */
-.print-header,
-.print-footer,
-.print-divider { display: none; }
+.print-header, .print-footer, .print-divider { display: none; }
 
-/* ── Regras de impressão ── */
 @media print {
-  /* Oculta elementos de navegação e controles */
-  nav,
-  .page-header,
-  .panel:has(form),
-  .btn-rel-action { display: none !important; }
-
+  nav, .page-header, .panel:has(form), .btn-rel-action { display: none !important; }
   body { background: #fff; font-size: 11pt; }
-
   .container { max-width: 100%; padding: 0; }
 
-  /* Exibe cabeçalho e rodapé institucionais */
   .print-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: .6rem;
   }
-
-  .print-logo {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: #2e7d32;
-    letter-spacing: .04em;
-  }
-
-  .print-meta {
-    font-size: .8rem;
-    text-align: right;
-    color: #444;
-    line-height: 1.5;
-  }
-
-  .print-divider {
-    display: block;
-    border: none;
-    border-top: 2px solid #2e7d32;
-    margin-bottom: 1rem;
-  }
-
+  .print-logo { font-size: 1.6rem; font-weight: 800; color: #2e7d32; }
+  .print-meta { font-size: .8rem; text-align: right; color: #444; line-height: 1.5; }
+  .print-divider { display: block; border: none; border-top: 2px solid #2e7d32; margin-bottom: 1rem; }
   .print-footer {
     display: block;
     text-align: center;
@@ -270,15 +254,10 @@
     padding-top: .5rem;
   }
 
-  /* Tabelas limpas para impressão */
   .panel { box-shadow: none; border: 1px solid #ddd; margin-bottom: .8rem; }
-  table  { font-size: 9pt; }
-  th     { background: #2e7d32 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
+  table { font-size: 9pt; }
+  th { background: #2e7d32 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .rpt-title { color: #000; border-left-color: #2e7d32; }
-  .section-title { margin-top: .8rem; }
-
-  /* Evita quebra de página dentro de linhas de tabela */
   tr { page-break-inside: avoid; }
 }
 </style>

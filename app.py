@@ -17,7 +17,6 @@ if DATABASE_URL:
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         return conn
 
-    # Placeholder do PostgreSQL é %s (diferente do ? do SQLite)
     PH = "%s"
 else:
     import sqlite3
@@ -37,7 +36,6 @@ def init_db():
     cur = db.cursor()
 
     if DATABASE_URL:
-        # PostgreSQL usa SERIAL em vez de AUTOINCREMENT e CURRENT_DATE para data
         cur.execute("""
             CREATE TABLE IF NOT EXISTS fornecedores (
                 id SERIAL PRIMARY KEY,
@@ -72,8 +70,18 @@ def init_db():
                 data DATE DEFAULT CURRENT_DATE
             )
         """)
+        # Compras feitas junto a fornecedores — dão entrada automática no estoque
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS compras (
+                id SERIAL PRIMARY KEY,
+                fornecedor_id INTEGER REFERENCES fornecedores(id),
+                estoque_id INTEGER REFERENCES estoque(id),
+                quantidade INTEGER NOT NULL,
+                valor_unitario NUMERIC(10,2) NOT NULL DEFAULT 0,
+                data DATE DEFAULT CURRENT_DATE
+            )
+        """)
     else:
-        # SQLite: usa executescript para múltiplos statements
         db.executescript("""
             CREATE TABLE IF NOT EXISTS fornecedores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,15 +105,23 @@ def init_db():
                 valor_unitario REAL NOT NULL DEFAULT 0,
                 data TEXT DEFAULT (date('now'))
             );
+            CREATE TABLE IF NOT EXISTS compras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fornecedor_id INTEGER REFERENCES fornecedores(id),
+                estoque_id INTEGER REFERENCES estoque(id),
+                quantidade INTEGER NOT NULL,
+                valor_unitario REAL NOT NULL DEFAULT 0,
+                data TEXT DEFAULT (date('now'))
+            );
         """)
-        # Migração: adiciona fornecedor_id se o banco local já existia sem ela
         try:
             db.execute("ALTER TABLE estoque ADD COLUMN fornecedor_id INTEGER")
         except Exception:
             pass
 
     db.commit()
-    cur.close() if DATABASE_URL else None
+    if DATABASE_URL:
+        cur.close()
     db.close()
 
 
@@ -115,15 +131,22 @@ init_db()
 # ── HELPERS ────────────────────────────────────────────────────────────────────
 
 def query(sql, params=()):
-    """Executa SELECT e retorna lista de linhas como dicionário."""
+    """Executa SELECT e retorna lista de dicionários com valores Python nativos."""
     db = get_db()
     cur = db.cursor()
     cur.execute(sql, params)
     rows = cur.fetchall()
     cur.close()
     db.close()
-    # Converte RealDictRow para dict comum para uniformidade
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        row = dict(r)
+        # Converte Decimal (PostgreSQL) para float para evitar erros no template
+        for k, v in row.items():
+            if hasattr(v, '__class__') and v.__class__.__name__ == 'Decimal':
+                row[k] = float(v)
+        result.append(row)
+    return result
 
 
 def execute(sql, params=()):
@@ -136,14 +159,14 @@ def execute(sql, params=()):
     db.close()
 
 
-def _filtro_periodo(data_ini, data_fim):
+def _filtro_periodo(data_ini, data_fim, alias="v"):
     """Monta cláusula WHERE e parâmetros para filtro de período."""
     filtro, params = "", []
     if data_ini:
-        filtro += f" AND v.data >= {PH}"
+        filtro += f" AND {alias}.data >= {PH}"
         params.append(data_ini)
     if data_fim:
-        filtro += f" AND v.data <= {PH}"
+        filtro += f" AND {alias}.data <= {PH}"
         params.append(data_fim)
     return filtro, params
 
@@ -152,8 +175,7 @@ def _filtro_periodo(data_ini, data_fim):
 
 @app.route("/")
 def index():
-    # Estoque com nome do fornecedor vinculado
-    estoque = query("""
+    estoque      = query(f"""
         SELECT e.*, f.nome as fornecedor_nome
         FROM estoque e LEFT JOIN fornecedores f ON e.fornecedor_id = f.id
         ORDER BY e.produto
@@ -161,11 +183,9 @@ def index():
     clientes     = query("SELECT * FROM clientes ORDER BY nome")
     fornecedores = query("SELECT * FROM fornecedores ORDER BY nome")
 
-    # Faturamento total acumulado
     row = query("SELECT COALESCE(SUM(quantidade * valor_unitario), 0) as total FROM vendas")
     faturamento = float(row[0]["total"])
 
-    # Produto com maior volume de saída
     mv = query("""
         SELECT e.produto, e.tipo_caixa, SUM(v.quantidade) as total
         FROM vendas v JOIN estoque e ON v.estoque_id = e.id
@@ -173,7 +193,6 @@ def index():
     """)
     mais_vendido = mv[0] if mv else None
 
-    # Itens com quantidade igual ou abaixo de 10 caixas
     estoque_baixo = query("SELECT * FROM estoque WHERE quantidade <= 10 ORDER BY quantidade")
 
     return render_template("index.html",
@@ -190,7 +209,6 @@ def add_estoque():
     qtd     = int(request.form["quantidade"])
     forn_id = request.form.get("fornecedor_id") or None
 
-    # Se produto+tipo já existe, soma a quantidade em vez de duplicar
     existente = query(
         f"SELECT id FROM estoque WHERE produto={PH} AND tipo_caixa={PH}", (produto, tipo)
     )
@@ -234,11 +252,9 @@ def add_venda():
 
     item = query(f"SELECT quantidade FROM estoque WHERE id={PH}", (estoque_id,))
 
-    # Bloqueia a venda se não houver estoque suficiente
     if not item or item[0]["quantidade"] < qtd:
         return "Estoque insuficiente", 400
 
-    # Baixa no estoque e registra a venda
     execute(f"UPDATE estoque SET quantidade = quantidade - {PH} WHERE id={PH}", (qtd, estoque_id))
     execute(
         f"INSERT INTO vendas (cliente_id, estoque_id, quantidade, valor_unitario) VALUES ({PH},{PH},{PH},{PH})",
@@ -252,8 +268,6 @@ def add_venda():
 @app.route("/clientes")
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
-
-    # Últimas 50 vendas com dados do cliente e do produto
     historico = query("""
         SELECT c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario, v.data
@@ -293,8 +307,21 @@ def del_cliente(id):
 
 @app.route("/fornecedores")
 def fornecedores():
-    lista = query("SELECT * FROM fornecedores ORDER BY nome")
-    return render_template("fornecedores.html", fornecedores=lista)
+    lista    = query("SELECT * FROM fornecedores ORDER BY nome")
+    estoque  = query("SELECT * FROM estoque ORDER BY produto")
+
+    # Histórico de compras com dados completos
+    compras = query("""
+        SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
+               c.quantidade, c.valor_unitario,
+               (c.quantidade * c.valor_unitario) as total
+        FROM compras c
+        JOIN fornecedores f ON c.fornecedor_id = f.id
+        JOIN estoque e ON c.estoque_id = e.id
+        ORDER BY c.data DESC LIMIT 50
+    """)
+    return render_template("fornecedores.html",
+        fornecedores=lista, estoque=estoque, compras=compras)
 
 
 @app.route("/fornecedores/add", methods=["POST"])
@@ -321,15 +348,52 @@ def del_fornecedor(id):
     return redirect(url_for("fornecedores"))
 
 
+# ── COMPRAS (entrada de mercadoria do fornecedor) ──────────────────────────────
+
+@app.route("/compra/add", methods=["POST"])
+def add_compra():
+    fornecedor_id = request.form["fornecedor_id"]
+    estoque_id    = request.form["estoque_id"]
+    qtd           = int(request.form["quantidade"])
+    valor         = float(request.form["valor_unitario"])
+
+    # Registra a compra
+    execute(
+        f"INSERT INTO compras (fornecedor_id, estoque_id, quantidade, valor_unitario) VALUES ({PH},{PH},{PH},{PH})",
+        (fornecedor_id, estoque_id, qtd, valor)
+    )
+    # Dá entrada automática no estoque
+    execute(
+        f"UPDATE estoque SET quantidade = quantidade + {PH}, fornecedor_id={PH} WHERE id={PH}",
+        (qtd, fornecedor_id, estoque_id)
+    )
+    return redirect(url_for("fornecedores"))
+
+
+@app.route("/compra/delete/<int:id>")
+def del_compra(id):
+    # Estorna a quantidade no estoque antes de deletar
+    compra = query(f"SELECT estoque_id, quantidade FROM compras WHERE id={PH}", (id,))
+    if compra:
+        execute(
+            f"UPDATE estoque SET quantidade = quantidade - {PH} WHERE id={PH}",
+            (compra[0]["quantidade"], compra[0]["estoque_id"])
+        )
+    execute(f"DELETE FROM compras WHERE id={PH}", (id,))
+    return redirect(url_for("fornecedores"))
+
+
 # ── RELATÓRIO ──────────────────────────────────────────────────────────────────
 
 @app.route("/relatorio")
 def relatorio():
     data_ini = request.args.get("data_ini", "")
     data_fim = request.args.get("data_fim", str(date.today()))
-    filtro, params = _filtro_periodo(data_ini, data_fim)
 
-    # Todas as vendas do período com dados completos
+    filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
+    filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
+
+    # Vendas do período
     vendas = query(f"""
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario,
@@ -339,23 +403,40 @@ def relatorio():
         JOIN clientes c ON v.cliente_id = c.id
         JOIN estoque e ON v.estoque_id = e.id
         LEFT JOIN fornecedores f ON e.fornecedor_id = f.id
-        WHERE 1=1 {filtro}
+        WHERE 1=1 {filtro_v}
         ORDER BY v.data DESC
-    """, params)
+    """, params_v)
 
     faturamento = sum(float(r["total"]) for r in vendas)
 
-    # Ranking de produtos por quantidade vendida no período
+    # Ranking de produtos vendidos
     por_produto = query(f"""
         SELECT e.produto, e.tipo_caixa,
                SUM(v.quantidade) as qtd_total,
                SUM(v.quantidade * v.valor_unitario) as receita
         FROM vendas v JOIN estoque e ON v.estoque_id = e.id
-        WHERE 1=1 {filtro}
+        WHERE 1=1 {filtro_v}
         GROUP BY e.produto, e.tipo_caixa ORDER BY qtd_total DESC
-    """, params)
+    """, params_v)
 
-    # Posição atual do estoque (sem filtro de data)
+    # Compras do período (custo)
+    compras = query(f"""
+        SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
+               c.quantidade, c.valor_unitario,
+               (c.quantidade * c.valor_unitario) as total
+        FROM compras c
+        JOIN fornecedores f ON c.fornecedor_id = f.id
+        JOIN estoque e ON c.estoque_id = e.id
+        WHERE 1=1 {filtro_c}
+        ORDER BY c.data DESC
+    """, params_c)
+
+    custo_total = sum(float(r["total"]) for r in compras)
+
+    # Margem bruta: receita - custo
+    margem = faturamento - custo_total
+
+    # Posição atual do estoque
     estoque = query("""
         SELECT e.produto, e.tipo_caixa, e.quantidade, f.nome as fornecedor
         FROM estoque e LEFT JOIN fornecedores f ON e.fornecedor_id = f.id
@@ -365,6 +446,7 @@ def relatorio():
     return render_template("relatorio.html",
         vendas=vendas, faturamento=faturamento,
         por_produto=por_produto, estoque=estoque,
+        compras=compras, custo_total=custo_total, margem=margem,
         data_ini=data_ini, data_fim=data_fim)
 
 
@@ -372,7 +454,8 @@ def relatorio():
 def relatorio_csv():
     data_ini = request.args.get("data_ini", "")
     data_fim = request.args.get("data_fim", str(date.today()))
-    filtro, params = _filtro_periodo(data_ini, data_fim)
+    filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
+    filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
 
     vendas = query(f"""
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
@@ -383,22 +466,40 @@ def relatorio_csv():
         JOIN clientes c ON v.cliente_id = c.id
         JOIN estoque e ON v.estoque_id = e.id
         LEFT JOIN fornecedores f ON e.fornecedor_id = f.id
-        WHERE 1=1 {filtro}
+        WHERE 1=1 {filtro_v}
         ORDER BY v.data DESC
-    """, params)
+    """, params_v)
+
+    compras = query(f"""
+        SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
+               c.quantidade, c.valor_unitario,
+               (c.quantidade * c.valor_unitario) as total
+        FROM compras c
+        JOIN fornecedores f ON c.fornecedor_id = f.id
+        JOIN estoque e ON c.estoque_id = e.id
+        WHERE 1=1 {filtro_c}
+        ORDER BY c.data DESC
+    """, params_c)
 
     output = io.StringIO()
     writer = csv.writer(output)
+
+    writer.writerow(["=== VENDAS ==="])
     writer.writerow(["Data", "Cliente", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)", "Fornecedor"])
     for r in vendas:
-        writer.writerow([
-            r["data"], r["cliente"], r["produto"], r["tipo_caixa"],
-            r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
-            f'{float(r["total"]):.2f}', r["fornecedor"] or ""
-        ])
+        writer.writerow([r["data"], r["cliente"], r["produto"], r["tipo_caixa"],
+                         r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
+                         f'{float(r["total"]):.2f}', r["fornecedor"] or ""])
+
+    writer.writerow([])
+    writer.writerow(["=== COMPRAS ==="])
+    writer.writerow(["Data", "Fornecedor", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)"])
+    for r in compras:
+        writer.writerow([r["data"], r["fornecedor"], r["produto"], r["tipo_caixa"],
+                         r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
+                         f'{float(r["total"]):.2f}'])
 
     output.seek(0)
-    # BOM UTF-8 garante que o Excel abra com acentos corretamente
     return Response(
         "\ufeff" + output.getvalue(),
         mimetype="text/csv",
