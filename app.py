@@ -397,11 +397,19 @@ def del_compra(id):
 
 @app.route("/relatorio")
 def relatorio():
-    data_ini = request.args.get("data_ini", "")
-    data_fim = request.args.get("data_fim", str(date.today()))
+    data_ini   = request.args.get("data_ini", "")
+    data_fim   = request.args.get("data_fim", str(date.today()))
+    cliente_id = request.args.get("cliente_id", "")
 
     filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
     filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
+
+    # Filtro adicional por cliente nas vendas
+    if cliente_id:
+        filtro_v += f" AND v.cliente_id = {PH}"
+        params_v.append(cliente_id)
+
+    todos_clientes = query("SELECT id, nome FROM clientes ORDER BY nome")
 
     vendas = query(f"""
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
@@ -451,7 +459,8 @@ def relatorio():
         vendas=vendas, faturamento=faturamento,
         por_produto=por_produto, estoque=estoque,
         compras=compras, custo_total=custo_total, margem=margem,
-        data_ini=data_ini, data_fim=data_fim,
+        data_ini=data_ini, data_fim=data_fim, cliente_id=cliente_id,
+        todos_clientes=todos_clientes,
         formatar_data_br=formatar_data_br)
 
 
