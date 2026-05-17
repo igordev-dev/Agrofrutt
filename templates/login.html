@@ -1,32 +1,74 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgroFrut — Login</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <style>
-    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--green-bg); }
-    .login-box { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.12); padding:2rem 2.2rem; width:min(360px,94vw); }
-    .login-logo { text-align:center; font-size:2rem; font-weight:800; color:var(--green); margin-bottom:.2rem; letter-spacing:.03em; }
-    .login-sub  { text-align:center; font-size:.85rem; color:#888; margin-bottom:1.5rem; }
-    .login-box input { margin-bottom:.7rem; }
-    .login-box button { width:100%; margin-top:.3rem; padding:.65rem; font-size:1rem; }
-    .login-erro { background:#fff3e0; color:var(--orange); border:1px solid #ffcc80; border-radius:8px; padding:.5rem .8rem; font-size:.85rem; margin-bottom:.8rem; }
-  </style>
-</head>
-<body>
-  <div class="login-box">
-    <div class="login-logo">AgroFrut</div>
-    <div class="login-sub">Gestão de Loja de Frutas</div>
-    {% if erro %}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgroFrutt — Login</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: var(--green-bg);
+      }
+      .login-box {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+        padding: 2rem 2.2rem;
+        width: min(360px, 94vw);
+      }
+      .login-logo {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--green);
+        margin-bottom: 0.2rem;
+        letter-spacing: 0.03em;
+      }
+      .login-sub {
+        text-align: center;
+        font-size: 0.85rem;
+        color: #888;
+        margin-bottom: 1.5rem;
+      }
+      .login-box input {
+        margin-bottom: 0.7rem;
+      }
+      .login-box button {
+        width: 100%;
+        margin-top: 0.3rem;
+        padding: 0.65rem;
+        font-size: 1rem;
+      }
+      .login-erro {
+        background: #fff3e0;
+        color: var(--orange);
+        border: 1px solid #ffcc80;
+        border-radius: 8px;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-box">
+      <div class="login-logo">AgroFrut</div>
+      <div class="login-sub">Gestão de Loja de Frutas</div>
+      {% if erro %}
       <div class="login-erro">{{ erro }}</div>
-    {% endif %}
-    <form action="/login" method="POST">
-      <input name="usuario" placeholder="Usuário" required autofocus>
-      <input name="senha" type="password" placeholder="Senha" required>
-      <button type="submit">Entrar</button>
-    </form>
-  </div>
-</body>
+      {% endif %}
+      <form action="/login" method="POST">
+        <input name="usuario" placeholder="Usuário" required autofocus />
+        <input name="senha" type="password" placeholder="Senha" required />
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+  </body>
 </html>
