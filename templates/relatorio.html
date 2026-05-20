@@ -2,10 +2,14 @@
 {% block content %}
 
 <div class="page-header" style="margin-top:.8rem">
-  <h1>Relatório {% if cliente_id %}— {{ nome_cliente_filtro }}{% else %}Geral{% endif %}</h1>
+  <h1>Relatório
+    {% if cliente_id %}&mdash; {{ nome_cliente_filtro }}
+    {% elif fornecedor_id %}&mdash; {{ nome_fornecedor_filtro }}
+    {% else %}Geral{% endif %}
+  </h1>
   <div style="display:flex;gap:.5rem;flex-wrap:wrap">
     <button onclick="window.print()" class="btn-rel-action">Imprimir / Salvar PDF</button>
-    <a href="/relatorio/csv?data_ini={{ data_ini }}&data_fim={{ data_fim }}&cliente_id={{ cliente_id }}" class="btn-rel-action">Exportar Planilha (.csv)</a>
+    <a href="/relatorio/csv?data_ini={{ data_ini }}&data_fim={{ data_fim }}&cliente_id={{ cliente_id }}&fornecedor_id={{ fornecedor_id }}" class="btn-rel-action">Exportar Planilha (.csv)</a>
   </div>
 </div>
 
@@ -19,9 +23,16 @@
       <input type="date" name="data_fim" value="{{ data_fim }}" style="width:auto">
       <label class="lbl-filtro">Cliente:</label>
       <select name="cliente_id" style="width:auto">
-        <option value="">Todos</option>
+        <option value="">Todos os clientes</option>
         {% for c in todos_clientes %}
           <option value="{{ c.id }}" {% if cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+        {% endfor %}
+      </select>
+      <label class="lbl-filtro">Fornecedor:</label>
+      <select name="fornecedor_id" style="width:auto">
+        <option value="">Todos os fornecedores</option>
+        {% for f in todos_fornecedores %}
+          <option value="{{ f.id }}" {% if fornecedor_id == f.id|string %}selected{% endif %}>{{ f.nome }}</option>
         {% endfor %}
       </select>
       <button type="submit">Filtrar</button>
@@ -38,6 +49,8 @@
     <div class="print-meta">
       {% if cliente_id %}
         <strong>Extrato de Compras — {{ nome_cliente_filtro }}</strong><br>
+      {% elif fornecedor_id %}
+        <strong>Extrato de Compras — Fornecedor: {{ nome_fornecedor_filtro }}</strong><br>
       {% else %}
         <strong>Relatório Gerencial</strong><br>
       {% endif %}
@@ -76,6 +89,39 @@
             <tr class="tr-total">
               <td colspan="5" style="text-align:right">Total:</td>
               <td>{{ "%.2f"|format(faturamento) }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% elif fornecedor_id %}
+
+    <div class="section-title rpt-title">Compras do Fornecedor {{ nome_fornecedor_filtro }}</div>
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th></tr>
+          </thead>
+          <tbody>
+            {% for c in compras %}
+            <tr>
+              <td>{{ formatar_data_br(c.data) }}</td>
+              <td>{{ c.produto }}</td>
+              <td>{{ c.tipo_caixa }}</td>
+              <td>{{ c.quantidade }}</td>
+              <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
+              <td>{{ "%.2f"|format(c.total) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="td-empty">Nenhuma compra registrada para este fornecedor no período.</td></tr>
+            {% endfor %}
+            {% if compras %}
+            <tr class="tr-total">
+              <td colspan="5" style="text-align:right">Total investido:</td>
+              <td>{{ "%.2f"|format(custo_total) }}</td>
             </tr>
             {% endif %}
           </tbody>

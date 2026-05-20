@@ -453,7 +453,8 @@ def del_compra(id):
 def relatorio():
     data_ini   = request.args.get("data_ini", "")
     data_fim   = request.args.get("data_fim", str(date.today()))
-    cliente_id = request.args.get("cliente_id", "")
+    cliente_id    = request.args.get("cliente_id", "")
+    fornecedor_id = request.args.get("fornecedor_id", "")
 
     filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
     filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
@@ -463,13 +464,25 @@ def relatorio():
         filtro_v += f" AND v.cliente_id = {PH}"
         params_v.append(cliente_id)
 
-    todos_clientes = query("SELECT id, nome FROM clientes ORDER BY nome")
+    # Filtro adicional por fornecedor nas compras
+    if fornecedor_id:
+        filtro_c += f" AND c.fornecedor_id = {PH}"
+        params_c.append(fornecedor_id)
+
+    todos_clientes    = query("SELECT id, nome FROM clientes ORDER BY nome")
+    todos_fornecedores = query("SELECT id, nome FROM fornecedores ORDER BY nome")
 
     # Busca o nome do cliente filtrado para exibir no cabeçalho
     nome_cliente_filtro = ""
     if cliente_id:
         c = query(f"SELECT nome FROM clientes WHERE id={PH}", (cliente_id,))
         nome_cliente_filtro = c[0]["nome"] if c else ""
+
+    # Busca o nome do fornecedor filtrado para exibir no cabeçalho
+    nome_fornecedor_filtro = ""
+    if fornecedor_id:
+        f = query(f"SELECT nome FROM fornecedores WHERE id={PH}", (fornecedor_id,))
+        nome_fornecedor_filtro = f[0]["nome"] if f else ""
 
     vendas = query(f"""
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
@@ -522,6 +535,8 @@ def relatorio():
         data_ini=data_ini, data_fim=data_fim,
         cliente_id=cliente_id, todos_clientes=todos_clientes,
         nome_cliente_filtro=nome_cliente_filtro,
+        fornecedor_id=fornecedor_id, todos_fornecedores=todos_fornecedores,
+        nome_fornecedor_filtro=nome_fornecedor_filtro,
         formatar_data_br=formatar_data_br)
 
 
