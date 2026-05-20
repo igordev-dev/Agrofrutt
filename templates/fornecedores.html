@@ -1,18 +1,16 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
-<div class="page-header" style="margin-top:.8rem">
+<div class="page-header" style="margin-top: 0.8rem">
   <h1>Fornecedores</h1>
 </div>
 
 <div class="panels">
-
   <div class="panel">
     <h2>Novo Fornecedor</h2>
     <form action="/fornecedores/add" method="POST">
-      <input name="nome" placeholder="Nome / Empresa" required>
-      <input name="telefone" placeholder="Telefone (opcional)">
-      <input name="produto" placeholder="Produto principal (opcional)">
+      <input name="nome" placeholder="Nome / Empresa" required />
+      <input name="telefone" placeholder="Telefone (opcional)" />
+      <input name="produto" placeholder="Produto principal (opcional)" />
       <button type="submit">Cadastrar</button>
     </form>
   </div>
@@ -23,31 +21,52 @@
       <select name="fornecedor_id" required>
         <option value="">Selecionar fornecedor</option>
         {% for f in fornecedores %}
-          <option value="{{ f.id }}">{{ f.nome }}</option>
+        <option value="{{ f.id }}">{{ f.nome }}</option>
         {% endfor %}
       </select>
       <select name="estoque_id" required>
         <option value="">Selecionar produto</option>
         {% for e in estoque %}
-          <option value="{{ e.id }}">{{ e.produto }} ({{ e.tipo_caixa }})</option>
+        <option value="{{ e.id }}">{{ e.produto }} ({{ e.tipo_caixa }})</option>
         {% endfor %}
       </select>
       <div class="form-row">
-        <input name="quantidade" type="number" min="1" placeholder="Qtd" required>
-        <input name="valor_unitario" type="number" step="0.01" min="0" placeholder="R$ unit." required>
+        <input
+          name="quantidade"
+          type="number"
+          min="1"
+          placeholder="Qtd"
+          required
+        />
+        <input
+          name="valor_unitario"
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="R$ unit."
+          required
+        />
       </div>
       <button type="submit">Registrar Entrada</button>
     </form>
-    <p style="font-size:.78rem;color:#888;margin-top:.4rem">A quantidade entra automaticamente no estoque.</p>
+    <p style="font-size: 0.78rem; color: #888; margin-top: 0.4rem">
+      A quantidade entra automaticamente no estoque.
+    </p>
   </div>
-
 </div>
 
 <div class="section-title">Fornecedores Cadastrados</div>
 <div class="panel">
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Nome</th><th>Telefone</th><th>Produto Principal</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>Produto Principal</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         {% for f in fornecedores %}
         <tr>
@@ -55,18 +74,32 @@
           <td>{{ f.telefone or '—' }}</td>
           <td>{{ f.produto or '—' }}</td>
           <td class="td-actions">
-            <button class="btn-edit" onclick="openModal('Editar Fornecedor', `
+            <button
+              class="btn-edit"
+              onclick="openModal('Editar Fornecedor', `
               <form action='/fornecedores/edit/{{ f.id }}' method='POST'>
                 <input name='nome' value='{{ f.nome }}' required>
                 <input name='telefone' value='{{ f.telefone or '' }}' placeholder='Telefone'>
                 <input name='produto' value='{{ f.produto or '' }}' placeholder='Produto'>
                 <button type='submit'>Salvar</button>
-              </form>`)">✏️</button>
-            <a href="/fornecedores/delete/{{ f.id }}" class="btn danger btn-sm" onclick="return confirm('Remover fornecedor?')">✕</a>
+              </form>`)"
+            >
+              ✏️
+            </button>
+            <a
+              href="/fornecedores/delete/{{ f.id }}"
+              class="btn danger btn-sm"
+              onclick="return confirm('Remover fornecedor?');"
+              >✕</a
+            >
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="4" style="text-align:center;color:#999">Nenhum fornecedor cadastrado</td></tr>
+        <tr>
+          <td colspan="4" style="text-align: center; color: #999">
+            Nenhum fornecedor cadastrado
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
@@ -78,7 +111,16 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>Data</th><th>Fornecedor</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd</th><th>Valor Unit.</th><th>Total</th><th></th></tr>
+        <tr>
+          <th>Data</th>
+          <th>Fornecedor</th>
+          <th>Produto</th>
+          <th>Tipo Caixa</th>
+          <th>Qtd</th>
+          <th>Valor Unit.</th>
+          <th>Total</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>
         {% for c in compras %}
@@ -91,16 +133,27 @@
           <td>R$ {{ "%.2f"|format(c.valor_unitario) }}</td>
           <td>R$ {{ "%.2f"|format(c.total) }}</td>
           <td>
-            <a href="/compra/delete/{{ c.id }}" class="btn danger btn-sm"
-               onclick="return confirm('Estornar esta compra? A quantidade será removida do estoque.')">✕</a>
+            <a
+              href="/compra/delete/{{ c.id }}"
+              class="btn danger btn-sm"
+              onclick="
+                return confirm(
+                  'Estornar esta compra? A quantidade será removida do estoque.',
+                );
+              "
+              >✕</a
+            >
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" style="text-align:center;color:#999">Nenhuma compra registrada</td></tr>
-        {% endfor %}
-        {% if compras %}
-        <tr style="font-weight:700;background:#e8f5e9">
-          <td colspan="6" style="text-align:right">Total investido:</td>
+        <tr>
+          <td colspan="8" style="text-align: center; color: #999">
+            Nenhuma compra registrada
+          </td>
+        </tr>
+        {% endfor %} {% if compras %}
+        <tr style="font-weight: 700; background: #e8f5e9">
+          <td colspan="6" style="text-align: right">Valor Total:</td>
           <td>R$ {{ "%.2f"|format(compras | sum(attribute='total')) }}</td>
           <td></td>
         </tr>
