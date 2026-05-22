@@ -317,14 +317,43 @@ def add_venda():
     return redirect(url_for("index"))
 
 
-# ── CLIENTES ───────────────────────────────────────────────────────────────────
+@app.route("/venda/edit/<int:id>", methods=["POST"])
+@login_required
+def edit_venda(id):
+    nova_qtd = int(request.form["quantidade"])
+    novo_valor = float(request.form["valor_unitario"])
+
+    # Busca a venda original para calcular a diferença no estoque
+    venda = query(f"SELECT estoque_id, quantidade FROM vendas WHERE id={PH}", (id,))
+    if venda:
+        diff = nova_qtd - venda[0]["quantidade"]
+        # Aplica a diferença: se aumentou a venda, baixa mais do estoque; se diminuiu, devolve
+        execute(f"UPDATE estoque SET quantidade = quantidade - {PH} WHERE id={PH}",
+                (diff, venda[0]["estoque_id"]))
+    execute(f"UPDATE vendas SET quantidade={PH}, valor_unitario={PH} WHERE id={PH}",
+            (nova_qtd, novo_valor, id))
+    return redirect(url_for("clientes"))
+
+
+@app.route("/venda/delete/<int:id>")
+@login_required
+def del_venda(id):
+    # Estorna a quantidade no estoque antes de deletar
+    venda = query(f"SELECT estoque_id, quantidade FROM vendas WHERE id={PH}", (id,))
+    if venda:
+        execute(f"UPDATE estoque SET quantidade = quantidade + {PH} WHERE id={PH}",
+                (venda[0]["quantidade"], venda[0]["estoque_id"]))
+    execute(f"DELETE FROM vendas WHERE id={PH}", (id,))
+    return redirect(url_for("clientes"))
+
+
 
 @app.route("/clientes")
 @login_required
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
     historico = query("""
-        SELECT c.nome as cliente, e.produto, e.tipo_caixa,
+        SELECT v.id, c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario, v.data
         FROM vendas v
         JOIN clientes c ON v.cliente_id = c.id
@@ -429,6 +458,24 @@ def add_compra():
         f"UPDATE estoque SET quantidade = quantidade + {PH}, fornecedor_id={PH} WHERE id={PH}",
         (qtd, fornecedor_id, estoque_id)
     )
+    return redirect(url_for("fornecedores"))
+
+
+@app.route("/compra/edit/<int:id>", methods=["POST"])
+@login_required
+def edit_compra(id):
+    nova_qtd   = int(request.form["quantidade"])
+    novo_valor = float(request.form["valor_unitario"])
+
+    # Busca a compra original para calcular a diferença no estoque
+    compra = query(f"SELECT estoque_id, quantidade FROM compras WHERE id={PH}", (id,))
+    if compra:
+        diff = nova_qtd - compra[0]["quantidade"]
+        # Aplica a diferença: se aumentou a compra, entra mais no estoque
+        execute(f"UPDATE estoque SET quantidade = quantidade + {PH} WHERE id={PH}",
+                (diff, compra[0]["estoque_id"]))
+    execute(f"UPDATE compras SET quantidade={PH}, valor_unitario={PH} WHERE id={PH}",
+            (nova_qtd, novo_valor, id))
     return redirect(url_for("fornecedores"))
 
 

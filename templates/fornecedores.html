@@ -132,17 +132,17 @@
           <td>{{ c.quantidade }}</td>
           <td>R$ {{ "%.2f"|format(c.valor_unitario) }}</td>
           <td>R$ {{ "%.2f"|format(c.total) }}</td>
-          <td>
-            <a
-              href="/compra/delete/{{ c.id }}"
-              class="btn danger btn-sm"
-              onclick="
-                return confirm(
-                  'Estornar esta compra? A quantidade será removida do estoque.',
-                );
-              "
-              >✕</a
-            >
+          <td class="td-actions">
+            <button class="btn-edit" onclick="openModal('Editar Compra', `
+              <form action='/compra/edit/{{ c.id }}' method='POST'>
+                <label style='font-size:.85rem;color:#555'>Quantidade</label>
+                <input name='quantidade' type='number' min='1' value='{{ c.quantidade }}' required>
+                <label style='font-size:.85rem;color:#555'>Valor Unit. (R$)</label>
+                <input name='valor_unitario' type='number' step='0.01' min='0' value='{{ "%.2f"|format(c.valor_unitario) }}' required>
+                <button type='submit'>Salvar</button>
+              </form>`)">✏️</button>
+            <a href="/compra/delete/{{ c.id }}" class="btn danger btn-sm"
+               onclick="return confirm('Estornar esta compra? A quantidade será removida do estoque.')">✕</a>
           </td>
         </tr>
         {% else %}
