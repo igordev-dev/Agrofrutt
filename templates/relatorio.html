@@ -28,7 +28,7 @@
           <option value="{{ c.id }}" {% if cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
         {% endfor %}
       </select>
-      <label class="lbl-filtro">Fornecedor:</label>
+      <label class="lbl-filtro">Fornecedor:<br></label>
       <select name="fornecedor_id" style="width:auto">
         <option value="">— sem filtro —</option>
         {% for f in todos_fornecedores %}
