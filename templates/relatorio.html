@@ -43,11 +43,15 @@
 
 <div class="print-area">
 
-  <!-- Cabeçalho institucional (apenas na impressão) -->
+<!-- Cabeçalho institucional (apenas na impressão) -->
   <div class="print-header">
-    <div class="print-logo">AgroFrutt</div><br>
-    <div class="print-email">agrofrutt23@gmail.com</div><br>
-    <div class="print-tel">(31) 987785846</div>
+    <!-- Grupo de Contatos empilhados -->
+    <div class="print-contact-group">
+      <div class="print-logo">AgroFrutt</div>
+      <div class="print-email">agrofrutt23@gmail.com</div>
+      <div class="print-tel">(31) 987785846</div>
+    </div>
+    
     <div class="print-meta">
       {% if cliente_id %}
         <strong>Extrato de Compras — {{ nome_cliente_filtro }}</strong><br>
@@ -312,6 +316,9 @@
   body { background:#fff; font-size:11pt; }
   .container { max-width:100%; padding:0; }
   .print-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; }
+  .print-logo { display: block;font-size: 1.6rem; font-weight: 800; color: #2e7d32; margin-bottom: 2px; }
+  .print-email { display: block;font-size: 1.2rem; font-weight: 800; color: #c78503; margin-bottom: 2px; }
+  .print-tel { display: block;font-size: 1.2rem; font-weight: 800; color: #c78503; }
   .print-logo { font-size:1.6rem; font-weight:800; color:#2e7d32; }
   .print-email { font-size:1.2rem; font-weight:800; color:#c78503; }
   .print-tel { font-size:1.2rem; font-weight:800; color:#c78503; }
