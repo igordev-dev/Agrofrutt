@@ -60,8 +60,8 @@
       {% else %}
         <strong>Relatório Gerencial</strong><br>
       {% endif %}
-      {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{% else %}Todos os registros até {{ data_fim }}{% endif %}<br>
-      Gerado em: {{ data_fim }}
+      {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{% else %}Todos os registros até {{ formatar_data_br (data_fim) }}{% endif %}<br>
+      Gerado em: {{ formatar_data_br(data_fim) }}
     </div>
   </div>
   <hr class="print-divider">
