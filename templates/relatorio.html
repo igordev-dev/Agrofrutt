@@ -23,14 +23,14 @@
       <input type="date" name="data_fim" value="{{ data_fim }}" style="width:auto">
       <label class="lbl-filtro">Cliente:</label>
       <select name="cliente_id" style="width:auto">
-        <option value="">Todos os clientes</option>
+        <option value="">— sem filtro —</option>
         {% for c in todos_clientes %}
           <option value="{{ c.id }}" {% if cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
         {% endfor %}
       </select>
       <label class="lbl-filtro">Fornecedor:</label>
       <select name="fornecedor_id" style="width:auto">
-        <option value="">Todos os fornecedores</option>
+        <option value="">— sem filtro —</option>
         {% for f in todos_fornecedores %}
           <option value="{{ f.id }}" {% if fornecedor_id == f.id|string %}selected{% endif %}>{{ f.nome }}</option>
         {% endfor %}
@@ -45,8 +45,8 @@
 
   <!-- Cabeçalho institucional (apenas na impressão) -->
   <div class="print-header">
-    <div class="print-logo">AgroFrutt</div>
-    <div class="print-email">agrofrutt23@gmail.com</div>
+    <div class="print-logo">AgroFrutt</div><br>
+    <div class="print-email">agrofrutt23@gmail.com</div><br>
     <div class="print-tel">(31) 987785846</div>
     <div class="print-meta">
       {% if cliente_id %}
@@ -313,8 +313,8 @@
   .container { max-width:100%; padding:0; }
   .print-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; }
   .print-logo { font-size:1.6rem; font-weight:800; color:#2e7d32; }
-  .print-email { font-size:1.6rem; font-weight:800; color:#c78503; }
-  .print-tel { font-size:1.6rem; font-weight:800; color:#c78503; }
+  .print-email { font-size:1.2rem; font-weight:800; color:#c78503; }
+  .print-tel { font-size:1.2rem; font-weight:800; color:#c78503; }
   .print-meta { font-size:.8rem; text-align:right; color:#444; line-height:1.5; }
   .print-divider { display:block; border:none; border-top:2px solid #2e7d32; margin-bottom:1rem; }
   .print-footer { display:block; text-align:center; font-size:.75rem; color:#888; margin-top:2rem; border-top:1px solid #ccc; padding-top:.5rem; }
