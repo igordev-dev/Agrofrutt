@@ -45,7 +45,9 @@
 
   <!-- Cabeçalho institucional (apenas na impressão) -->
   <div class="print-header">
-    <div class="print-logo">AgroFrut</div>
+    <div class="print-logo">AgroFrutt</div>
+    <div class="print-email">agrofrutt23@gmail.com</div>
+    <div class="print-tel">(31) 987785846</div>
     <div class="print-meta">
       {% if cliente_id %}
         <strong>Extrato de Compras — {{ nome_cliente_filtro }}</strong><br>
@@ -65,7 +67,7 @@
      ══════════════════════════════════════════════════════ #}
   {% if cliente_id %}
 
-    <div class="section-title rpt-title">Compras de {{ nome_cliente_filtro }}</div>
+    <div class="section-title rpt-title">Cliente: {{ nome_cliente_filtro }}</div>
     <div class="panel">
       <div class="table-wrap">
         <table>
@@ -293,7 +295,7 @@
   {% endif %}
 
   <div class="print-footer">
-    AgroFrut &mdash; Documento gerado automaticamente pelo sistema &mdash; {{ data_fim }}
+    AgroFrutt &mdash; Documento gerado automaticamente pelo sistema &mdash; {{ data_fim }}
   </div>
 
 </div>
@@ -311,6 +313,8 @@
   .container { max-width:100%; padding:0; }
   .print-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; }
   .print-logo { font-size:1.6rem; font-weight:800; color:#2e7d32; }
+  .print-email { font-size:1.6rem; font-weight:800; color:#c78503; }
+  .print-tel { font-size:1.6rem; font-weight:800; color:#c78503; }
   .print-meta { font-size:.8rem; text-align:right; color:#444; line-height:1.5; }
   .print-divider { display:block; border:none; border-top:2px solid #2e7d32; margin-bottom:1rem; }
   .print-footer { display:block; text-align:center; font-size:.75rem; color:#888; margin-top:2rem; border-top:1px solid #ccc; padding-top:.5rem; }
