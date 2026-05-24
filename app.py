@@ -357,14 +357,14 @@ def del_venda(id):
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
     historico = query("""
-        SELECT v.id, c.nome as cliente, e.produto, e.tipo_caixa,
-               v.quantidade, v.valor_unitario, v.data
+        SELECT v.id, c.nome as cliente, e.produto, e.tipo_caixa, v.quantidade, v.valor_unitario, v.data, v.estoque_id
         FROM vendas v
         JOIN clientes c ON v.cliente_id = c.id
         JOIN estoque e ON v.estoque_id = e.id
         ORDER BY v.data DESC LIMIT 50
     """)
-    return render_template("clientes.html", clientes=lista, historico=historico,
+    estoque = query("SELECT * FROM estoque ORDER BY produto")
+    return render_template("clientes.html", clientes=lista, historico=historico, estoque=estoque,
                            formatar_data_br=formatar_data_br)
 
 
