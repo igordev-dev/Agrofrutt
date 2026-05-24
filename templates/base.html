@@ -18,18 +18,13 @@
         >
       </div>
       <div class="nav-btns">
-        <a
-          href="/clientes"
-          {%
-          if
-          request.path=""
-          ="/clientes"
-          %}class="active"
-          {%
-          endif
-          %}
-          >Clientes</a
-        >
+      <a
+        href="/clientes"
+        {% if request.path == "/clientes" %}class="active"{% endif %}
+      >
+        Clientes
+      </a>
+    </div>
         <a
           href="/fornecedores"
           {%
