@@ -67,14 +67,14 @@
                 <label style='font-size:.85rem;color:#555'>Produto</label>
                 <select name='estoque_id' required>
                   {% for e in estoque %}
-                  <option value="{{ e.id }}" {% if h.estoque_id == e.id %}selected{% endif %}>{{ e.produto }} ({{ e.tipo_caixa }})</option>
+                  <option value='{{ e.id }}' {% if h.estoque_id|string == e.id|string %}selected{% endif %}>{{ e.produto }} ({{ e.tipo_caixa }})</option>
                   {% endfor %}
                 </select>
                 <label style='font-size:.85rem;color:#555'>Tipo de Caixa</label>
                 <select name='tipo_caixa' required>
-                  <option value='Plástica' {% if h.tipo_caixa == 'Plástica' %}selected{% endif %}>Plástica</option>
-                  <option value='Papelão' {% if h.tipo_caixa == 'Papelão' %}selected{% endif %}>Papelão</option>
-                  <option value='Madeira' {% if h.tipo_caixa == 'Madeira' %}selected{% endif %}>Madeira</option>
+                  <option value='Pl\u00e1stica' ${ '{{ h.tipo_caixa }}' === 'Pl\u00e1stica' ? 'selected' : '' }>Pl\u00e1stica</option>
+                  <option value='Papel\u00e3o' ${ '{{ h.tipo_caixa }}' === 'Papel\u00e3o' ? 'selected' : '' }>Papel\u00e3o</option>
+                  <option value='Madeira' ${ '{{ h.tipo_caixa }}' === 'Madeira' ? 'selected' : '' }>Madeira</option>
                 </select>
                 <label style='font-size:.85rem;color:#555'>Quantidade</label>
                 <input name='quantidade' type='number' min='1' value='{{ h.quantidade }}' required>
