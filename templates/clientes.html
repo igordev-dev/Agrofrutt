@@ -64,6 +64,12 @@
           <td class="td-actions">
             <button class="btn-edit" onclick="openModal('Editar Venda', `
               <form action='/venda/edit/{{ h.id }}' method='POST'>
+                <label style='font-size:.85rem;color:#555'>Produto</label>
+                <select name='estoque_id' required>
+                  {% for e in estoque %}
+                  <option value='{{ e.id }}' {% if h.estoque_id == e.id %}selected{% endif %}>{{ e.produto }} ({{ e.tipo_caixa }})</option>
+                  {% endfor %}
+                </select>
                 <label style='font-size:.85rem;color:#555'>Tipo de Caixa</label>
                 <select name='tipo_caixa' required>
                   <option value='Pl\u00e1stica' ${ '{{ h.tipo_caixa }}' === 'Pl\u00e1stica' ? 'selected' : '' }>Pl\u00e1stica</option>

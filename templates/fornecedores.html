@@ -135,6 +135,12 @@
           <td class="td-actions">
             <button class="btn-edit" onclick="openModal('Editar Compra', `
               <form action='/compra/edit/{{ c.id }}' method='POST'>
+                <label style='font-size:.85rem;color:#555'>Produto</label>
+                <select name='estoque_id' required>
+                  {% for e in estoque %}
+                  <option value='{{ e.id }}' {% if c.estoque_id == e.id %}selected{% endif %}>{{ e.produto }} ({{ e.tipo_caixa }})</option>
+                  {% endfor %}
+                </select>
                 <label style='font-size:.85rem;color:#555'>Quantidade</label>
                 <input name='quantidade' type='number' min='1' value='{{ c.quantidade }}' required>
                 <label style='font-size:.85rem;color:#555'>Valor Unit. (R$)</label>
