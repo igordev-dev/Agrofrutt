@@ -27,14 +27,7 @@
     </div>
         <a
           href="/fornecedores"
-          {%
-          if
-          request.path=""
-          ="/fornecedores"
-          %}class="active"
-          {%
-          endif
-          %}
+          {% if request.path == "/fornecedores" %}class="active"{% endif %}
           >Fornecedores</a
         >
         <a href="/logout" style="background: #555">Sair</a>
