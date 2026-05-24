@@ -64,6 +64,12 @@
           <td class="td-actions">
             <button class="btn-edit" onclick="openModal('Editar Venda', `
               <form action='/venda/edit/{{ h.id }}' method='POST'>
+                <label style='font-size:.85rem;color:#555'>Tipo de Caixa</label>
+                <select name='tipo_caixa' required>
+                  <option value='Pl\u00e1stica' ${ '{{ h.tipo_caixa }}' === 'Pl\u00e1stica' ? 'selected' : '' }>Pl\u00e1stica</option>
+                  <option value='Papel\u00e3o' ${ '{{ h.tipo_caixa }}' === 'Papel\u00e3o' ? 'selected' : '' }>Papel\u00e3o</option>
+                  <option value='Madeira' ${ '{{ h.tipo_caixa }}' === 'Madeira' ? 'selected' : '' }>Madeira</option>
+                </select>
                 <label style='font-size:.85rem;color:#555'>Quantidade</label>
                 <input name='quantidade' type='number' min='1' value='{{ h.quantidade }}' required>
                 <label style='font-size:.85rem;color:#555'>Valor Unit. (R$)</label>

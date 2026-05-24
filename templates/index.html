@@ -40,6 +40,7 @@
         <option value="">Tipo de caixa</option>
         <option value="Plástica">Plástica</option>
         <option value="Papelão">Papelão</option>
+        <option value="Madeira">Madeira</option>
       </select>
       <select name="fornecedor_id">
         <option value="">Fornecedor (opcional)</option>
@@ -109,6 +110,7 @@
                 <select name='tipo_caixa' required>
                   <option value='Plástica' {% if e.tipo_caixa == 'Plástica' %}selected{% endif %}>Plástica</option>
                   <option value='Papelão' {% if e.tipo_caixa == 'Papelão' %}selected{% endif %}>Papelão</option>
+                  <option value='Madeira' {% if e.tipo_caixa == 'Madeira' %}selected{% endif %}>Madeira</option>
                 </select>
                 <select name='fornecedor_id'>
                   <option value=''>Sem fornecedor</option>

@@ -320,16 +320,20 @@ def add_venda():
 @app.route("/venda/edit/<int:id>", methods=["POST"])
 @login_required
 def edit_venda(id):
-    nova_qtd = int(request.form["quantidade"])
+    nova_qtd   = int(request.form["quantidade"])
     novo_valor = float(request.form["valor_unitario"])
+    tipo_caixa = request.form.get("tipo_caixa", "").strip()
 
     # Busca a venda original para calcular a diferença no estoque
     venda = query(f"SELECT estoque_id, quantidade FROM vendas WHERE id={PH}", (id,))
     if venda:
         diff = nova_qtd - venda[0]["quantidade"]
-        # Aplica a diferença: se aumentou a venda, baixa mais do estoque; se diminuiu, devolve
         execute(f"UPDATE estoque SET quantidade = quantidade - {PH} WHERE id={PH}",
                 (diff, venda[0]["estoque_id"]))
+        # Atualiza o tipo de caixa no estoque se informado
+        if tipo_caixa:
+            execute(f"UPDATE estoque SET tipo_caixa={PH} WHERE id={PH}",
+                    (tipo_caixa, venda[0]["estoque_id"]))
     execute(f"UPDATE vendas SET quantidade={PH}, valor_unitario={PH} WHERE id={PH}",
             (nova_qtd, novo_valor, id))
     return redirect(url_for("clientes"))
@@ -642,7 +646,7 @@ def relatorio_csv():
     return Response(
         "\ufeff" + output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=relatorio_agrofrut.csv"}
+        headers={"Content-Disposition": "attachment; filename=relatorio_agrofrutt.csv"}
     )
 
 
