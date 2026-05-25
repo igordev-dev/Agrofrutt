@@ -72,18 +72,19 @@
                 </select>
                 <label style='font-size:.85rem;color:#555'>Tipo de Caixa</label>
                 <select name='tipo_caixa' required>
-                  <option value='Pl\u00e1stica' ${ '{{ h.tipo_caixa }}' === 'Pl\u00e1stica' ? 'selected' : '' }>Pl\u00e1stica</option>
-                  <option value='Papel\u00e3o' ${ '{{ h.tipo_caixa }}' === 'Papel\u00e3o' ? 'selected' : '' }>Papel\u00e3o</option>
-                  <option value='Madeira' ${ '{{ h.tipo_caixa }}' === 'Madeira' ? 'selected' : '' }>Madeira</option>
+                  <option value='Plástica' {% if h.tipo_caixa == 'Plástica' %}selected{% endif %}>Plástica</option>
+                  <option value='Papelão' {% if h.tipo_caixa == 'Papelão' %}selected{% endif %}>Papelão</option>
+                  <option value='Madeira' {% if h.tipo_caixa == 'Madeira' %}selected{% endif %}>Madeira</option>
                 </select>
                 <label style='font-size:.85rem;color:#555'>Quantidade</label>
                 <input name='quantidade' type='number' min='1' value='{{ h.quantidade }}' required>
                 <label style='font-size:.85rem;color:#555'>Valor Unit. (R$)</label>
                 <input name='valor_unitario' type='number' step='0.01' min='0' value='{{ "%.2f"|format(h.valor_unitario) }}' required>
+                <label style='font-size:.85rem;color:#555'>Data</label>
+                <input name='data' type='date' value='{{ h.data }}'>
                 <button type='submit'>Salvar</button>
               </form>`)">✏️</button>
             <a href="/venda/delete/{{ h.id }}" class="btn danger btn-sm"
-               onclick="return confirm('Excluir esta venda? O estoque será estornado.')">✕</a>
           </td>
         </tr>
         {% else %}

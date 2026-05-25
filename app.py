@@ -303,6 +303,7 @@ def add_venda():
     estoque_id = request.form["estoque_id"]
     qtd        = int(request.form["quantidade"])
     valor      = float(request.form["valor_unitario"])
+    data       = request.form.get("data")
 
     item = query(f"SELECT quantidade FROM estoque WHERE id={PH}", (estoque_id,))
 
@@ -310,33 +311,44 @@ def add_venda():
         return "Estoque insuficiente", 400
 
     execute(f"UPDATE estoque SET quantidade = quantidade - {PH} WHERE id={PH}", (qtd, estoque_id))
-    execute(
-        f"INSERT INTO vendas (cliente_id, estoque_id, quantidade, valor_unitario) VALUES ({PH},{PH},{PH},{PH})",
-        (cliente_id, estoque_id, qtd, valor)
-    )
+    if data:
+        execute(
+            f"INSERT INTO vendas (cliente_id, estoque_id, quantidade, valor_unitario, data) VALUES ({PH},{PH},{PH},{PH},{PH})",
+            (cliente_id, estoque_id, qtd, valor, data)
+        )
+    else:
+        execute(
+            f"INSERT INTO vendas (cliente_id, estoque_id, quantidade, valor_unitario) VALUES ({PH},{PH},{PH},{PH})",
+            (cliente_id, estoque_id, qtd, valor)
+        )
     return redirect(url_for("index"))
 
 
 @app.route("/venda/edit/<int:id>", methods=["POST"])
 @login_required
 def edit_venda(id):
-    nova_qtd   = int(request.form["quantidade"])
-    novo_valor = float(request.form["valor_unitario"])
-    tipo_caixa = request.form.get("tipo_caixa", "").strip()
+        nova_qtd   = int(request.form["quantidade"])
+        novo_valor = float(request.form["valor_unitario"])
+        tipo_caixa = request.form.get("tipo_caixa", "").strip()
+        nova_data  = request.form.get("data")
 
-    # Busca a venda original para calcular a diferença no estoque
-    venda = query(f"SELECT estoque_id, quantidade FROM vendas WHERE id={PH}", (id,))
-    if venda:
+        # Busca a venda original para calcular a diferença no estoque
+        venda = query(f"SELECT estoque_id, quantidade FROM vendas WHERE id={PH}", (id,))
+        if venda:
         diff = nova_qtd - venda[0]["quantidade"]
         execute(f"UPDATE estoque SET quantidade = quantidade - {PH} WHERE id={PH}",
-                (diff, venda[0]["estoque_id"]))
+            (diff, venda[0]["estoque_id"]))
         # Atualiza o tipo de caixa no estoque se informado
         if tipo_caixa:
             execute(f"UPDATE estoque SET tipo_caixa={PH} WHERE id={PH}",
-                    (tipo_caixa, venda[0]["estoque_id"]))
-    execute(f"UPDATE vendas SET quantidade={PH}, valor_unitario={PH} WHERE id={PH}",
+                (tipo_caixa, venda[0]["estoque_id"]))
+        if nova_data:
+        execute(f"UPDATE vendas SET quantidade={PH}, valor_unitario={PH}, data={PH} WHERE id={PH}",
+            (nova_qtd, novo_valor, nova_data, id))
+        else:
+        execute(f"UPDATE vendas SET quantidade={PH}, valor_unitario={PH} WHERE id={PH}",
             (nova_qtd, novo_valor, id))
-    return redirect(url_for("clientes"))
+        return redirect(url_for("clientes"))
 
 
 @app.route("/venda/delete/<int:id>")

@@ -74,6 +74,7 @@
       <div class="form-row">
         <input name="quantidade" type="number" min="1" placeholder="Qtd" required>
         <input name="valor_unitario" type="number" step="0.01" min="0" placeholder="R$ unit." required>
+        <input name="data" type="date" value="{{ ('' if not data_fim else data_fim) or '' }}" placeholder="Data da venda">
       </div>
       <button type="submit">Registrar Saída</button>
     </form>
