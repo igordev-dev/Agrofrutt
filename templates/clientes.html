@@ -1,7 +1,6 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
-<div class="page-header" style="margin-top:.8rem">
+<div class="page-header" style="margin-top: 0.8rem">
   <h1>Clientes</h1>
 </div>
 
@@ -9,8 +8,8 @@
   <div class="panel">
     <h2>Novo Cliente</h2>
     <form action="/clientes/add" method="POST">
-      <input name="nome" placeholder="Nome completo" required>
-      <input name="telefone" placeholder="Telefone (opcional)">
+      <input name="nome" placeholder="Nome completo" required />
+      <input name="telefone" placeholder="Telefone (opcional)" />
       <button type="submit">Cadastrar</button>
     </form>
   </div>
@@ -19,24 +18,48 @@
     <h2>Clientes Cadastrados</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Nome</th><th>Telefone</th><th></th></tr></thead>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
           {% for c in clientes %}
           <tr>
             <td>{{ c.nome }}</td>
             <td>{{ c.telefone or '—' }}</td>
             <td class="td-actions">
-              <button class="btn-edit" onclick="openModal('Editar Cliente', `
+              <button
+                class="btn-edit"
+                onclick="openModal('Editar Cliente', `
                 <form action='/clientes/edit/{{ c.id }}' method='POST'>
                   <input name='nome' value='{{ c.nome }}' required>
                   <input name='telefone' value='{{ c.telefone or '' }}' placeholder='Telefone'>
                   <button type='submit'>Salvar</button>
-                </form>`)">✏️</button>
-              <a href="/clientes/delete/{{ c.id }}" class="btn danger btn-sm" onclick="return confirm('Remover cliente?')">✕</a>
+                </form>`)"
+                aria-label="Editar cliente {{ c.nome }}"
+              >
+                ✏️
+              </button>
+              <button
+                class="btn danger btn-sm btn-delete-cliente"
+                data-id="{{ c.id }}"
+                data-nome="{{ c.nome }}"
+                aria-label="Excluir cliente {{ c.nome }}"
+                style="margin-left: 8px"
+              >
+                ✕
+              </button>
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="3" style="text-align:center;color:#999">Nenhum cliente</td></tr>
+          <tr>
+            <td colspan="3" style="text-align: center; color: #999">
+              Nenhum cliente
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -49,7 +72,16 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>Cliente</th><th>Produto</th><th>Caixa</th><th>Qtd</th><th>Valor Unit.</th><th>Total</th><th>Data</th><th></th></tr>
+        <tr>
+          <th>Cliente</th>
+          <th>Produto</th>
+          <th>Caixa</th>
+          <th>Qtd</th>
+          <th>Valor Unit.</th>
+          <th>Total</th>
+          <th>Data</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>
         {% for h in historico %}
@@ -62,7 +94,9 @@
           <td>R$ {{ "%.2f"|format(h.quantidade * h.valor_unitario) }}</td>
           <td>{{ formatar_data_br(h.data) }}</td>
           <td class="td-actions">
-            <button class="btn-edit" onclick="openModal('Editar Venda', `
+            <button
+              class="btn-edit"
+              onclick="openModal('Editar Venda', `
               <form action='/venda/edit/{{ h.id }}' method='POST'>
                 <label style='font-size:.85rem;color:#555'>Produto</label>
                 <select name='estoque_id' required>
@@ -79,20 +113,214 @@
                 <label style='font-size:.85rem;color:#555'>Quantidade</label>
                 <input name='quantidade' type='number' min='1' value='{{ h.quantidade }}' required>
                 <label style='font-size:.85rem;color:#555'>Valor Unit. (R$)</label>
-                <input name='valor_unitario' type='number' step='0.01' min='0' value='{{ "%.2f"|format(h.valor_unitario) }}' required>
+                <input name='valor_unitario' type='number' step='0.01' min='0' value='{{ '%.2f'|format(h.valor_unitario) }}' required>
                 <label style='font-size:.85rem;color:#555'>Data</label>
                 <input name='data' type='date' value='{{ h.data }}'>
                 <button type='submit'>Salvar</button>
-              </form>`)">✏️</button>
-            <a href="/venda/delete/{{ h.id }}" class="btn danger btn-sm"
+              </form>`)"
+            >
+              ✏️
+            </button>
+            <button
+              class="btn danger btn-sm btn-delete-venda"
+              data-id="{{ h.id }}"
+              data-cliente="{{ h.cliente }}"
+              aria-label="Excluir venda de {{ h.cliente }}"
+              style="margin-left: 8px"
+            >
+              ✕
+            </button>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" style="text-align:center;color:#999">Nenhuma venda registrada</td></tr>
+        <tr>
+          <td colspan="8" style="text-align: center; color: #999">
+            Nenhuma venda registrada
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<div
+  id="modal-confirm-delete-cliente"
+  style="
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.35);
+    align-items: center;
+    justify-content: center;
+  "
+>
+  <div
+    style="
+      background: #fff;
+      padding: 1.2rem 1.2rem 1rem 1.2rem;
+      border-radius: 12px;
+      max-width: 90vw;
+      width: 320px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+      text-align: center;
+    "
+  >
+    <div style="font-size: 1.1rem; margin-bottom: 0.7rem">
+      Tem certeza que deseja excluir o cliente
+      <span
+        id="modal-cliente-nome"
+        style="font-weight: 600; color: #e65100"
+      ></span
+      >?
+    </div>
+    <form id="modal-delete-cliente-form" method="GET" style="margin-bottom: 0">
+      <button
+        type="button"
+        id="modal-cancel-cliente-btn"
+        style="
+          background: #eee;
+          color: #333;
+          padding: 0.5rem 1.2rem;
+          border-radius: 6px;
+          border: none;
+          font-size: 1rem;
+          margin-right: 10px;
+        "
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        style="
+          background: #e65100;
+          color: #fff;
+          padding: 0.5rem 1.2rem;
+          border-radius: 6px;
+          border: none;
+          font-size: 1rem;
+        "
+      >
+        Excluir
+      </button>
+    </form>
+  </div>
+</div>
+
+<div
+  id="modal-confirm-delete-venda"
+  style="
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.35);
+    align-items: center;
+    justify-content: center;
+  "
+>
+  <div
+    style="
+      background: #fff;
+      padding: 1.2rem 1.2rem 1rem 1.2rem;
+      border-radius: 12px;
+      max-width: 90vw;
+      width: 320px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+      text-align: center;
+    "
+  >
+    <div style="font-size: 1.1rem; margin-bottom: 0.7rem">
+      Tem certeza que deseja excluir esta venda do cliente
+      <span
+        id="modal-venda-cliente"
+        style="font-weight: 600; color: #e65100"
+      ></span
+      >?
+    </div>
+    <form id="modal-delete-venda-form" method="GET" style="margin-bottom: 0">
+      <button
+        type="button"
+        id="modal-cancel-venda-btn"
+        style="
+          background: #eee;
+          color: #333;
+          padding: 0.5rem 1.2rem;
+          border-radius: 6px;
+          border: none;
+          font-size: 1rem;
+          margin-right: 10px;
+        "
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        style="
+          background: #e65100;
+          color: #fff;
+          padding: 0.5rem 1.2rem;
+          border-radius: 6px;
+          border: none;
+          font-size: 1rem;
+        "
+      >
+        Excluir
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var modalCliente = document.getElementById("modal-confirm-delete-cliente");
+    var modalVenda = document.getElementById("modal-confirm-delete-venda");
+
+    document.querySelectorAll(".btn-delete-cliente").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.getElementById("modal-cliente-nome").textContent =
+          btn.getAttribute("data-nome");
+        document.getElementById("modal-delete-cliente-form").action =
+          "/clientes/delete/" + btn.getAttribute("data-id");
+        modalCliente.style.display = "flex";
+      });
+    });
+
+    document.querySelectorAll(".btn-delete-venda").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.getElementById("modal-venda-cliente").textContent =
+          btn.getAttribute("data-cliente");
+        document.getElementById("modal-delete-venda-form").action =
+          "/venda/delete/" + btn.getAttribute("data-id");
+        modalVenda.style.display = "flex";
+      });
+    });
+
+    document.getElementById("modal-cancel-cliente-btn").onclick = function () {
+      modalCliente.style.display = "none";
+    };
+
+    document.getElementById("modal-cancel-venda-btn").onclick = function () {
+      modalVenda.style.display = "none";
+    };
+
+    modalCliente.addEventListener("click", function (e) {
+      if (e.target === modalCliente) modalCliente.style.display = "none";
+    });
+
+    modalVenda.addEventListener("click", function (e) {
+      if (e.target === modalVenda) modalVenda.style.display = "none";
+    });
+  });
+</script>
 
 {% endblock %}
