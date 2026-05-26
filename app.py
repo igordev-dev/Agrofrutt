@@ -587,7 +587,7 @@ def relatorio():
         ORDER BY v.data DESC
     """, params_v)
 
-    faturamento = sum(float(r["total"]) for r in vendas)
+    faturamento = sum(float(r["total"]) for r in vendas if not r["pago"])
 
     por_produto = query(f"""
         SELECT e.produto, e.tipo_caixa,
@@ -610,7 +610,7 @@ def relatorio():
         ORDER BY c.data DESC
     """, params_c)
 
-    custo_total = sum(float(r["total"]) for r in compras)
+    custo_total = sum(float(r["total"]) for r in compras if not r["pago"])
     margem      = faturamento - custo_total
 
     estoque = query("""
