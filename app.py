@@ -96,7 +96,8 @@ def init_db():
                 estoque_id INTEGER REFERENCES estoque(id),
                 quantidade INTEGER NOT NULL,
                 valor_unitario NUMERIC(10,2) NOT NULL DEFAULT 0,
-                data DATE DEFAULT CURRENT_DATE
+                data DATE DEFAULT CURRENT_DATE,
+                pago INTEGER NOT NULL DEFAULT 0
             )
         """)
         # Compras feitas junto a fornecedores — dão entrada automática no estoque
@@ -107,7 +108,8 @@ def init_db():
                 estoque_id INTEGER REFERENCES estoque(id),
                 quantidade INTEGER NOT NULL,
                 valor_unitario NUMERIC(10,2) NOT NULL DEFAULT 0,
-                data DATE DEFAULT CURRENT_DATE
+                data DATE DEFAULT CURRENT_DATE,
+                pago INTEGER NOT NULL DEFAULT 0
             )
         """)
     else:
@@ -132,7 +134,8 @@ def init_db():
                 estoque_id INTEGER REFERENCES estoque(id),
                 quantidade INTEGER NOT NULL,
                 valor_unitario REAL NOT NULL DEFAULT 0,
-                data TEXT DEFAULT (date('now'))
+                data TEXT DEFAULT (date('now')),
+                pago INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS compras (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,11 +143,18 @@ def init_db():
                 estoque_id INTEGER REFERENCES estoque(id),
                 quantidade INTEGER NOT NULL,
                 valor_unitario REAL NOT NULL DEFAULT 0,
-                data TEXT DEFAULT (date('now'))
+                data TEXT DEFAULT (date('now')),
+                pago INTEGER NOT NULL DEFAULT 0
             );
         """)
         try:
             db.execute("ALTER TABLE estoque ADD COLUMN fornecedor_id INTEGER")
+        except Exception:
+            pass
+
+    for tabela in ("vendas", "compras"):
+        try:
+            cur.execute(f"ALTER TABLE {tabela} ADD COLUMN pago INTEGER NOT NULL DEFAULT 0")
         except Exception:
             pass
 
@@ -363,13 +373,21 @@ def del_venda(id):
     return redirect(url_for("clientes"))
 
 
+@app.route("/venda/pagamento/<int:id>", methods=["POST"])
+@login_required
+def pagamento_venda(id):
+    pago = 1 if request.form.get("pago") == "1" else 0
+    execute(f"UPDATE vendas SET pago={PH} WHERE id={PH}", (pago, id))
+    return redirect(url_for("clientes"))
+
+
 
 @app.route("/clientes")
 @login_required
 def clientes():
     lista = query("SELECT * FROM clientes ORDER BY nome")
     historico = query("""
-        SELECT v.id, c.nome as cliente, e.produto, e.tipo_caixa, v.quantidade, v.valor_unitario, v.data, v.estoque_id
+        SELECT v.id, c.nome as cliente, e.produto, e.tipo_caixa, v.quantidade, v.valor_unitario, v.data, v.estoque_id, v.pago
         FROM vendas v
         JOIN clientes c ON v.cliente_id = c.id
         JOIN estoque e ON v.estoque_id = e.id
@@ -415,7 +433,7 @@ def fornecedores():
     lista   = query("SELECT * FROM fornecedores ORDER BY nome")
     estoque = query("SELECT * FROM estoque ORDER BY produto")
     compras = query("""
-        SELECT c.id, c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
+        SELECT c.id, c.data, f.nome as fornecedor, e.produto, e.tipo_caixa, c.estoque_id, c.pago,
                c.quantidade, c.valor_unitario,
                (c.quantidade * c.valor_unitario) as total
         FROM compras c
@@ -511,6 +529,14 @@ def del_compra(id):
 
 # ── RELATÓRIO ──────────────────────────────────────────────────────────────────
 
+@app.route("/compra/pagamento/<int:id>", methods=["POST"])
+@login_required
+def pagamento_compra(id):
+    pago = 1 if request.form.get("pago") == "1" else 0
+    execute(f"UPDATE compras SET pago={PH} WHERE id={PH}", (pago, id))
+    return redirect(url_for("fornecedores"))
+
+
 @app.route("/relatorio")
 @login_required
 def relatorio():
@@ -551,6 +577,7 @@ def relatorio():
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario,
                (v.quantidade * v.valor_unitario) as total,
+               v.pago,
                f.nome as fornecedor
         FROM vendas v
         JOIN clientes c ON v.cliente_id = c.id
@@ -574,7 +601,8 @@ def relatorio():
     compras = query(f"""
         SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
                c.quantidade, c.valor_unitario,
-               (c.quantidade * c.valor_unitario) as total
+               (c.quantidade * c.valor_unitario) as total,
+               c.pago
         FROM compras c
         JOIN fornecedores f ON c.fornecedor_id = f.id
         JOIN estoque e ON c.estoque_id = e.id
@@ -615,6 +643,7 @@ def relatorio_csv():
         SELECT v.data, c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario,
                (v.quantidade * v.valor_unitario) as total,
+               v.pago,
                f.nome as fornecedor
         FROM vendas v
         JOIN clientes c ON v.cliente_id = c.id
@@ -627,7 +656,8 @@ def relatorio_csv():
     compras = query(f"""
         SELECT c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
                c.quantidade, c.valor_unitario,
-               (c.quantidade * c.valor_unitario) as total
+               (c.quantidade * c.valor_unitario) as total,
+               c.pago
         FROM compras c
         JOIN fornecedores f ON c.fornecedor_id = f.id
         JOIN estoque e ON c.estoque_id = e.id
@@ -639,19 +669,19 @@ def relatorio_csv():
     writer = csv.writer(output)
 
     writer.writerow(["=== VENDAS ==="])
-    writer.writerow(["Data", "Cliente", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)", "Fornecedor"])
+    writer.writerow(["Data", "Cliente", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)", "Fornecedor", "Pagamento"])
     for r in vendas:
         writer.writerow([r["data"], r["cliente"], r["produto"], r["tipo_caixa"],
                          r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
-                         f'{float(r["total"]):.2f}', r["fornecedor"] or ""])
+                         f'{float(r["total"]):.2f}', r["fornecedor"] or "", "Sim" if r["pago"] else ""])
 
     writer.writerow([])
     writer.writerow(["=== COMPRAS ==="])
-    writer.writerow(["Data", "Fornecedor", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)"])
+    writer.writerow(["Data", "Fornecedor", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)", "Pagamento"])
     for r in compras:
         writer.writerow([r["data"], r["fornecedor"], r["produto"], r["tipo_caixa"],
                          r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
-                         f'{float(r["total"]):.2f}'])
+                         f'{float(r["total"]):.2f}', "Sim" if r["pago"] else ""])
 
     output.seek(0)
     # BOM UTF-8 garante que o Excel abra com acentos corretamente

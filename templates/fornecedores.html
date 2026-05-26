@@ -124,7 +124,7 @@
       </thead>
       <tbody>
         {% for c in compras %}
-        <tr>
+        <tr class="{% if c.pago %}linha-paga{% endif %}" onclick="openPagamento('/compra/pagamento/{{ c.id }}')">
           <td>{{ formatar_data_br(c.data) }}</td>
           <td>{{ c.fornecedor }}</td>
           <td>{{ c.produto }}</td>
@@ -132,7 +132,7 @@
           <td>{{ c.quantidade }}</td>
           <td>R$ {{ "%.2f"|format(c.valor_unitario) }}</td>
           <td>R$ {{ "%.2f"|format(c.total) }}</td>
-          <td class="td-actions">
+          <td class="td-actions" onclick="event.stopPropagation()">
             <button class="btn-edit" onclick="openModal('Editar Compra', `
               <form action='/compra/edit/{{ c.id }}' method='POST'>
                 <label style='font-size:.85rem;color:#555'>Produto</label>
@@ -168,5 +168,30 @@
     </table>
   </div>
 </div>
+
+<div id="modal-pagamento" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.35);align-items:center;justify-content:center;">
+  <div style="background:#fff;padding:1.2rem;border-radius:12px;max-width:90vw;width:320px;box-shadow:0 2px 12px rgba(0,0,0,.18);text-align:center;">
+    <div style="font-size:1.1rem;margin-bottom:.8rem;">Pagamento realizado?</div>
+    <form id="form-pagamento" method="POST" style="margin-bottom:0;display:flex;gap:.6rem;justify-content:center;">
+      <button type="submit" name="pago" value="0" style="background:#eee;color:#333;padding:.5rem 1.2rem;border-radius:6px;border:none;font-size:1rem;">Não</button>
+      <button type="submit" name="pago" value="1" style="background:#2e7d32;color:#fff;padding:.5rem 1.2rem;border-radius:6px;border:none;font-size:1rem;">Sim</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openPagamento(action) {
+  document.getElementById("form-pagamento").action = action;
+  document.getElementById("modal-pagamento").style.display = "flex";
+}
+document.getElementById("modal-pagamento").addEventListener("click", function(e) {
+  if (e.target === this) this.style.display = "none";
+});
+</script>
+
+<style>
+  .linha-paga td { background: #d8f3dc !important; }
+  tbody tr[onclick] { cursor: pointer; }
+</style>
 
 {% endblock %}
