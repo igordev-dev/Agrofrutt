@@ -80,23 +80,30 @@
             <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th></tr>
           </thead>
           <tbody>
-            {% for v in vendas %}
-            <tr>
-              <td>{{ formatar_data_br(v.data) }}</td>
-              <td>{{ v.produto }}</td>
-              <td>{{ v.tipo_caixa }}</td>
-              <td>{{ v.quantidade }}</td>
-              <td>{{ "%.2f"|format(v.valor_unitario) }}</td>
-              <td>{{ "%.2f"|format(v.total) }}</td>
-              <td>{% if v.pago %}Sim{% endif %}</td>
-            </tr>
-            {% else %}
+            {% if not vendas %}
             <tr><td colspan="7" class="td-empty">Nenhuma compra registrada para este cliente no período.</td></tr>
-            {% endfor %}
-            {% if vendas %}
+            {% else %}
+              {% for data_grp, itens in vendas|groupby('data')|sort(attribute='grouper', reverse=True) %}
+                {% for v in itens %}
+                <tr>
+                  <td>{{ formatar_data_br(v.data) }}</td>
+                  <td>{{ v.produto }}</td>
+                  <td>{{ v.tipo_caixa }}</td>
+                  <td>{{ v.quantidade }}</td>
+                  <td>{{ "%.2f"|format(v.valor_unitario) }}</td>
+                  <td>{{ "%.2f"|format(v.total) }}</td>
+                  <td>{% if v.pago %}Sim{% endif %}</td>
+                </tr>
+                {% endfor %}
+                <tr style="background:#f9f9f9; font-weight:600;">
+                  <td colspan="5" style="text-align:right; color:#555; font-size:0.9rem;">Total do dia {{ formatar_data_br(data_grp) }}:</td>
+                  <td style="color:#555;">{{ "%.2f"|format(itens | sum(attribute='total')) }}</td>
+                  <td></td>
+                </tr>
+              {% endfor %}
             <tr class="tr-total">
-              <td colspan="5" style="text-align:right">Total:</td>
-              <td>{{ "%.2f"|format(faturamento) }}</td>
+              <td colspan="5" style="text-align:right">Total Geral:</td>
+              <td>{{ "%.2f"|format(vendas | sum(attribute='total')) }}</td>
               <td></td>
             </tr>
             {% endif %}
@@ -115,23 +122,30 @@
             <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th></tr>
           </thead>
           <tbody>
-            {% for c in compras %}
-            <tr>
-              <td>{{ formatar_data_br(c.data) }}</td>
-              <td>{{ c.produto }}</td>
-              <td>{{ c.tipo_caixa }}</td>
-              <td>{{ c.quantidade }}</td>
-              <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
-              <td>{{ "%.2f"|format(c.total) }}</td>
-              <td>{% if c.pago %}Sim{% endif %}</td>
-            </tr>
-            {% else %}
+            {% if not compras %}
             <tr><td colspan="7" class="td-empty">Nenhuma compra registrada para este fornecedor no período.</td></tr>
-            {% endfor %}
-            {% if compras %}
+            {% else %}
+              {% for data_grp, itens in compras|groupby('data')|sort(attribute='grouper', reverse=True) %}
+                {% for c in itens %}
+                <tr>
+                  <td>{{ formatar_data_br(c.data) }}</td>
+                  <td>{{ c.produto }}</td>
+                  <td>{{ c.tipo_caixa }}</td>
+                  <td>{{ c.quantidade }}</td>
+                  <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
+                  <td>{{ "%.2f"|format(c.total) }}</td>
+                  <td>{% if c.pago %}Sim{% endif %}</td>
+                </tr>
+                {% endfor %}
+                <tr style="background:#f9f9f9; font-weight:600;">
+                  <td colspan="5" style="text-align:right; color:#555; font-size:0.9rem;">Total do dia {{ formatar_data_br(data_grp) }}:</td>
+                  <td style="color:#555;">{{ "%.2f"|format(itens | sum(attribute='total')) }}</td>
+                  <td></td>
+                </tr>
+              {% endfor %}
             <tr class="tr-total">
-              <td colspan="5" style="text-align:right">Valor Total:</td>
-              <td>{{ "%.2f"|format(custo_total) }}</td>
+              <td colspan="5" style="text-align:right">Valor Total Geral:</td>
+              <td>{{ "%.2f"|format(compras | sum(attribute='total')) }}</td>
               <td></td>
             </tr>
             {% endif %}
