@@ -77,11 +77,11 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th></tr>
+            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th><th>Anotação</th></tr>
           </thead>
           <tbody>
             {% if not vendas %}
-            <tr><td colspan="7" class="td-empty">Nenhuma compra registrada para este cliente no período.</td></tr>
+            <tr><td colspan="8" class="td-empty">Nenhuma compra registrada para este cliente no período.</td></tr>
             {% else %}
               {% for data_grp, itens in vendas|groupby('data')|sort(attribute='grouper', reverse=True) %}
                 {% for v in itens %}
@@ -93,18 +93,21 @@
                   <td>{{ "%.2f"|format(v.valor_unitario) }}</td>
                   <td>{{ "%.2f"|format(v.total) }}</td>
                   <td>{% if v.pago %}Sim{% endif %}</td>
+                  <td contenteditable="true" class="editable-col" data-id="{{ v.id }}" data-tipo="venda" title="Clique para digitar (salva automaticamente)">{{ v.anotacao or '' }}</td>
                 </tr>
                 {% endfor %}
                 <tr style="background:#f9f9f9; font-weight:600;">
                   <td colspan="5" style="text-align:right; color:#555; font-size:0.9rem;">Total do dia {{ formatar_data_br(data_grp) }}:</td>
                   <td style="color:#555;">{{ "%.2f"|format(itens | sum(attribute='total')) }}</td>
                   <td></td>
+                  <td colspan="2"></td>
                 </tr>
               {% endfor %}
             <tr class="tr-total">
               <td colspan="5" style="text-align:right">Total Geral:</td>
               <td>{{ "%.2f"|format(vendas | sum(attribute='total')) }}</td>
               <td></td>
+              <td colspan="2"></td>
             </tr>
             {% endif %}
           </tbody>
@@ -119,11 +122,11 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th></tr>
+            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th><th>Anotação</th></tr>
           </thead>
           <tbody>
             {% if not compras %}
-            <tr><td colspan="7" class="td-empty">Nenhuma compra registrada para este fornecedor no período.</td></tr>
+            <tr><td colspan="8" class="td-empty">Nenhuma compra registrada para este fornecedor no período.</td></tr>
             {% else %}
               {% for data_grp, itens in compras|groupby('data')|sort(attribute='grouper', reverse=True) %}
                 {% for c in itens %}
@@ -135,18 +138,21 @@
                   <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
                   <td>{{ "%.2f"|format(c.total) }}</td>
                   <td>{% if c.pago %}Sim{% endif %}</td>
+                  <td contenteditable="true" class="editable-col" data-id="{{ c.id }}" data-tipo="compra" title="Clique para digitar (salva automaticamente)">{{ c.anotacao or '' }}</td>
                 </tr>
                 {% endfor %}
                 <tr style="background:#f9f9f9; font-weight:600;">
                   <td colspan="5" style="text-align:right; color:#555; font-size:0.9rem;">Total do dia {{ formatar_data_br(data_grp) }}:</td>
                   <td style="color:#555;">{{ "%.2f"|format(itens | sum(attribute='total')) }}</td>
                   <td></td>
+                  <td colspan="2"></td>
                 </tr>
               {% endfor %}
             <tr class="tr-total">
               <td colspan="5" style="text-align:right">Valor Total Geral:</td>
               <td>{{ "%.2f"|format(compras | sum(attribute='total')) }}</td>
               <td></td>
+              <td colspan="2"></td>
             </tr>
             {% endif %}
           </tbody>
@@ -327,12 +333,42 @@
 
 </div>
 
+<script>
+document.querySelectorAll('.editable-col').forEach(col => {
+  col.addEventListener('blur', function() {
+    const id = this.getAttribute('data-id');
+    const tipo = this.getAttribute('data-tipo');
+    const texto = this.innerText.trim();
+    
+    const formData = new FormData();
+    formData.append("anotacao", texto);
+    
+    fetch(`/${tipo}/anotacao/${id}`, {
+      method: "POST",
+      body: formData
+    }).catch(console.error);
+  });
+});
+</script>
+
 <style>
 .lbl-filtro { font-size:.85rem; color:#555; }
 .rpt-title { font-size:.9rem; text-transform:uppercase; letter-spacing:.06em; color:var(--green); border-left:3px solid var(--green); padding-left:.5rem; }
 .tr-total td { font-weight:700; background:#e8f5e9; border-top:2px solid var(--green); }
 .td-empty { text-align:center; color:#999; font-style:italic; padding:1rem; }
 .print-header, .print-footer, .print-divider { display:none; }
+
+.editable-col {
+  cursor: text;
+  background: #fffdf5;
+  border: 1px dashed #e0e0e0;
+  outline: none;
+  min-width: 80px;
+}
+.editable-col:focus {
+  background: #fff;
+  border-color: var(--green);
+}
 
 @media print {
   nav, .page-header, .panel:has(form), .btn-rel-action { display:none !important; }
@@ -353,6 +389,7 @@
   th { background:#2e7d32 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .rpt-title { color:#000; border-left-color:#2e7d32; }
   tr { page-break-inside:avoid; }
+  .editable-col { border: none !important; background: transparent !important; }
 }
 </style>
 
