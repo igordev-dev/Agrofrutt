@@ -2,9 +2,13 @@
 
 <div class="page-header" style="margin-top: 0.8rem">
   <h1>
-    Relatório {% if cliente_id %}&mdash; {{ nome_cliente_filtro }} {% elif
-    fornecedor_id %}&mdash; {{ nome_fornecedor_filtro }} {% else %}Geral{% endif
-    %}
+    {% if cliente_id %}
+      Relatório &mdash; {{ nome_cliente_filtro }}
+    {% elif fornecedor_id %}
+      Relatório &mdash; {{ nome_fornecedor_filtro }}
+    {% else %}
+      Relatório Geral
+    {% endif %}
   </h1>
   <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
     <button onclick="window.print()" class="btn-rel-action">
@@ -50,38 +54,18 @@
       <label class="lbl-filtro">Cliente:</label>
       <select name="cliente_id" style="width: auto">
         <option value="">— sem filtro —</option>
-        {% for c in todos_clientes %}
-        <option
-          value="{{ c.id }}"
-          {%
-          if
-          cliente_id=""
-          ="c.id|string"
-          %}selected{%
-          endif
-          %}
-        >
-          {{ c.nome }}
-        </option>
+        {% for c in todos_clientes %} {% set sel_c = "selected" if cliente_id ==
+        c.id|string else "" %}
+        <option value="{{ c.id }}" {{ sel_c }}>{{ c.nome }}</option>
         {% endfor %}
       </select>
       <div style="flex-basis: 100%; height: 0"></div>
       <label class="lbl-filtro">Fornecedor:</label>
       <select name="fornecedor_id" style="width: auto">
         <option value="">— sem filtro —</option>
-        {% for f in todos_fornecedores %}
-        <option
-          value="{{ f.id }}"
-          {%
-          if
-          fornecedor_id=""
-          ="f.id|string"
-          %}selected{%
-          endif
-          %}
-        >
-          {{ f.nome }}
-        </option>
+        {% for f in todos_fornecedores %} {% set sel_f = "selected" if
+        fornecedor_id == f.id|string else "" %}
+        <option value="{{ f.id }}" {{ sel_f }}>{{ f.nome }}</option>
         {% endfor %}
       </select>
       <button type="submit">Filtrar</button>
@@ -109,9 +93,10 @@
       ><br />
       {% else %}
       <strong>Relatório Gerencial</strong><br />
-      {% endif %} {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{%
-      else %}Todos os registros até {{ formatar_data_br(data_fim) }}{% endif
-      %}<br />
+      {% endif %} {% if data_ini %} Período: {{ data_ini }} a {{ data_fim }} {%
+      else %} Todos os registros até {{ formatar_data_br(data_fim) }} {% endif
+      %}
+      <br />
       Gerado em: {{ formatar_data_br(data_fim) }}
     </div>
   </div>
@@ -339,8 +324,8 @@
             <td class="col-fit col-center">{{ p.qtd_total }}</td>
             <td class="col-fit col-right">{{ "%.2f"|format(p.receita) }}</td>
             <td class="col-fit col-center">
-              {% if faturamento > 0 %}{{ "%.1f"|format((p.receita / faturamento)
-              * 100) }}%{% else %}—{% endif %}
+              {% if faturamento > 0 %} {{ "%.1f"|format((p.receita /
+              faturamento) * 100) }}% {% else %} — {% endif %}
             </td>
           </tr>
           {% else %}
