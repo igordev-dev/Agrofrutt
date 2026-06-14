@@ -155,12 +155,14 @@ def init_db():
     for tabela in ("vendas", "compras"):
         try:
             cur.execute(f"ALTER TABLE {tabela} ADD COLUMN pago INTEGER NOT NULL DEFAULT 0")
+            db.commit()
         except Exception:
-            pass
+            db.rollback()
         try:
             cur.execute(f"ALTER TABLE {tabela} ADD COLUMN anotacao TEXT DEFAULT ''")
+            db.commit()
         except Exception:
-            pass
+            db.rollback()
 
     db.commit()
     if DATABASE_URL:
