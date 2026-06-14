@@ -1,50 +1,97 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
-<div class="page-header" style="margin-top:.8rem">
-  <h1>Relatório
-    {% if cliente_id %}&mdash; {{ nome_cliente_filtro }}
-    {% elif fornecedor_id %}&mdash; {{ nome_fornecedor_filtro }}
-    {% else %}Geral{% endif %}
+<div class="page-header" style="margin-top: 0.8rem">
+  <h1>
+    Relatório {% if cliente_id %}&mdash; {{ nome_cliente_filtro }} {% elif
+    fornecedor_id %}&mdash; {{ nome_fornecedor_filtro }} {% else %}Geral{% endif
+    %}
   </h1>
-  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-    <button onclick="window.print()" class="btn-rel-action">Imprimir / Salvar PDF</button>
-    <a href="/relatorio/csv?data_ini={{ data_ini }}&data_fim={{ data_fim }}&cliente_id={{ cliente_id }}&fornecedor_id={{ fornecedor_id }}" class="btn-rel-action">Exportar Planilha (.csv)</a>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+    <button onclick="window.print()" class="btn-rel-action">
+      Imprimir / Salvar PDF
+    </button>
+    <a
+      href="/relatorio/csv?data_ini={{ data_ini }}&data_fim={{ data_fim }}&cliente_id={{ cliente_id }}&fornecedor_id={{ fornecedor_id }}"
+      class="btn-rel-action"
+      >Exportar Planilha (.csv)</a
+    >
   </div>
 </div>
 
 <!-- Filtro -->
-<div class="panel" style="margin-bottom:1rem">
-  <form action="/relatorio" method="GET" style="flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:.5rem">
-    <div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:center">
+<div class="panel" style="margin-bottom: 1rem">
+  <form
+    action="/relatorio"
+    method="GET"
+    style="
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 0.5rem;
+    "
+  >
+    <div
+      style="display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center"
+    >
       <label class="lbl-filtro">De:</label>
-      <input type="date" name="data_ini" value="{{ data_ini }}" style="width:auto">
+      <input
+        type="date"
+        name="data_ini"
+        value="{{ data_ini }}"
+        style="width: auto"
+      />
       <label class="lbl-filtro">Até:</label>
-      <input type="date" name="data_fim" value="{{ data_fim }}" style="width:auto">
+      <input
+        type="date"
+        name="data_fim"
+        value="{{ data_fim }}"
+        style="width: auto"
+      />
       <label class="lbl-filtro">Cliente:</label>
-      <select name="cliente_id" style="width:auto">
+      <select name="cliente_id" style="width: auto">
         <option value="">— sem filtro —</option>
         {% for c in todos_clientes %}
-          <option value="{{ c.id }}" {% if cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+        <option
+          value="{{ c.id }}"
+          {%
+          if
+          cliente_id=""
+          ="c.id|string"
+          %}selected{%
+          endif
+          %}
+        >
+          {{ c.nome }}
+        </option>
         {% endfor %}
       </select>
-      <div style="flex-basis:100%; height:0;"></div>
+      <div style="flex-basis: 100%; height: 0"></div>
       <label class="lbl-filtro">Fornecedor:</label>
-      <select name="fornecedor_id" style="width:auto">
+      <select name="fornecedor_id" style="width: auto">
         <option value="">— sem filtro —</option>
         {% for f in todos_fornecedores %}
-          <option value="{{ f.id }}" {% if fornecedor_id == f.id|string %}selected{% endif %}>{{ f.nome }}</option>
+        <option
+          value="{{ f.id }}"
+          {%
+          if
+          fornecedor_id=""
+          ="f.id|string"
+          %}selected{%
+          endif
+          %}
+        >
+          {{ f.nome }}
+        </option>
         {% endfor %}
       </select>
       <button type="submit">Filtrar</button>
-      <a href="/relatorio" class="btn" style="background:#888">Limpar</a>
+      <a href="/relatorio" class="btn" style="background: #888">Limpar</a>
     </div>
   </form>
 </div>
 
 <div class="print-area">
-
-<!-- Cabeçalho institucional (apenas na impressão) -->
+  <!-- Cabeçalho institucional (apenas na impressão) -->
   <div class="print-header">
     <!-- Grupo de Contatos empilhados -->
     <div class="print-contact-group">
@@ -52,345 +99,592 @@
       <div class="print-email">agrofrutt23@gmail.com</div>
       <div class="print-tel">(31) 987785846</div>
     </div>
-    
+
     <div class="print-meta">
       {% if cliente_id %}
-        <strong>Extrato de Compras — {{ nome_cliente_filtro }}</strong><br>
+      <strong>Extrato de Compras — {{ nome_cliente_filtro }}</strong><br />
       {% elif fornecedor_id %}
-        <strong>Extrato de Compras — Fornecedor: {{ nome_fornecedor_filtro }}</strong><br>
+      <strong
+        >Extrato de Compras — Fornecedor: {{ nome_fornecedor_filtro }}</strong
+      ><br />
       {% else %}
-        <strong>Relatório Gerencial</strong><br>
-      {% endif %}
-      {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{% else %}Todos os registros até {{ formatar_data_br (data_fim) }}{% endif %}<br>
+      <strong>Relatório Gerencial</strong><br />
+      {% endif %} {% if data_ini %}Período: {{ data_ini }} a {{ data_fim }}{%
+      else %}Todos os registros até {{ formatar_data_br (data_fim) }}{% endif
+      %}<br />
       Gerado em: {{ formatar_data_br(data_fim) }}
     </div>
   </div>
-  <hr class="print-divider">
+  <hr class="print-divider" />
 
-  {# ══════════════════════════════════════════════════════
-     MODO CLIENTE — apenas tabela de vendas desse cliente
-     ══════════════════════════════════════════════════════ #}
-  {% if cliente_id %}
+  {# ══════════════════════════════════════════════════════ MODO CLIENTE —
+  apenas tabela de vendas desse cliente
+  ══════════════════════════════════════════════════════ #} {% if cliente_id %}
 
-    <div class="section-title rpt-title">Cliente: {{ nome_cliente_filtro }}</div>
-    <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th></th><th>Pagamento</th></tr>
-          </thead>
-          <tbody>
-            {% if not vendas %}
-            <tr><td colspan="8" class="td-empty">Nenhuma compra registrada para este cliente no período.</td></tr>
-            {% else %}
-              {% for data_grp, itens in vendas|groupby('data')|sort(attribute='grouper', reverse=True) %}
-                {% for v in itens %}
-                <tr>
-                  <td>{{ formatar_data_br(v.data) }}</td>
-                  <td>{{ v.produto }}</td>
-                  <td>{{ v.tipo_caixa }}</td>
-                  <td>{{ v.quantidade }}</td>
-                  <td>{{ "%.2f"|format(v.valor_unitario) }}</td>
-                  <td>{{ "%.2f"|format(v.total) }}</td>
-                  <td>{% if v.pago %}Sim{% endif %}</td>
-                  <td contenteditable="true" class="editable-col" data-id="{{ v.id }}" data-tipo="venda" title="Clique para digitar (salva automaticamente)">{{ v.anotacao or '' }}</td>
-                </tr>
-                {% endfor %}
-                <tr style="background:#f9f9f9; font-weight:600;">
-                  <td colspan="5" style="text-align:right; color:#555; font-size:0.9rem;">Total do dia {{ formatar_data_br(data_grp) }}:</td>
-                  <td style="color:#555;">{{ "%.2f"|format(itens | sum(attribute='total')) }}</td>
-                  <td></td>
-                  <td colspan="2"></td>
-                </tr>
-              {% endfor %}
-            <tr class="tr-total">
-              <td colspan="5" style="text-align:right">Total Geral:</td>
-              <td>{{ "%.2f"|format(vendas | sum(attribute='total')) }}</td>
-              <td></td>
-              <td colspan="2"></td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
+  <div class="section-title rpt-title">Cliente: {{ nome_cliente_filtro }}</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-fit">Data</th>
+            <th>Produto</th>
+            <th>Tipo Caixa</th>
+            <th class="col-fit col-center">Qtd.</th>
+            <th class="col-fit col-right">Valor Unit. (R$)</th>
+            <th class="col-fit col-right">Total (R$)</th>
+            <th class="col-fit col-center">Pagamento</th>
+            <th>Anotação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not vendas %}
+          <tr>
+            <td colspan="8" class="td-empty">
+              Nenhuma compra registrada para este cliente no período.
+            </td>
+          </tr>
+          {% else %} {% for data_grp, itens in
+          vendas|groupby('data')|sort(attribute='grouper', reverse=True) %} {%
+          for v in itens %}
+          <tr>
+            <td class="col-fit">{{ formatar_data_br(v.data) }}</td>
+            <td>{{ v.produto }}</td>
+            <td>{{ v.tipo_caixa }}</td>
+            <td class="col-fit col-center">{{ v.quantidade }}</td>
+            <td class="col-fit col-right">
+              {{ "%.2f"|format(v.valor_unitario) }}
+            </td>
+            <td class="col-fit col-right">{{ "%.2f"|format(v.total) }}</td>
+            <td class="col-fit col-center">
+              {% if v.pago %}Sim{% else %}—{% endif %}
+            </td>
+            <td
+              contenteditable="true"
+              class="editable-col"
+              data-id="{{ v.id }}"
+              data-tipo="venda"
+              title="Clique para digitar (salva automaticamente)"
+            >
+              {{ v.anotacao or '' }}
+            </td>
+          </tr>
+          {% endfor %}
+          <tr style="background: #f9f9f9; font-weight: 600">
+            <td
+              colspan="5"
+              style="text-align: right; color: #555; font-size: 0.9rem"
+            >
+              Total do dia {{ formatar_data_br(data_grp) }}:
+            </td>
+            <td class="col-fit col-right" style="color: #555">
+              {{ "%.2f"|format(itens | sum(attribute='total')) }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+          {% endfor %}
+          <tr class="tr-total">
+            <td colspan="5" style="text-align: right">Total Geral:</td>
+            <td class="col-fit col-right">
+              {{ "%.2f"|format(vendas | sum(attribute='total')) }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
   {% elif fornecedor_id %}
 
-    <div class="section-title rpt-title"> Fornecedor {{ nome_fornecedor_filtro }}</div>
-    <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Data</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th></th><th>Pagamento</th></tr>
-          </thead>
-          <tbody>
-            {% if not compras %}
-            <tr><td colspan="8" class="td-empty">Nenhuma compra registrada para este fornecedor no período.</td></tr>
-            {% else %}
-              {% for data_grp, itens in compras|groupby('data')|sort(attribute='grouper', reverse=True) %}
-                {% for c in itens %}
-                <tr>
-                  <td>{{ formatar_data_br(c.data) }}</td>
-                  <td>{{ c.produto }}</td>
-                  <td>{{ c.tipo_caixa }}</td>
-                  <td>{{ c.quantidade }}</td>
-                  <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
-                  <td>{{ "%.2f"|format(c.total) }}</td>
-                  <td>{% if c.pago %}Sim{% endif %}</td>
-                  <td contenteditable="true" class="editable-col" data-id="{{ c.id }}" data-tipo="compra" title="Clique para digitar (salva automaticamente)">{{ c.anotacao or '' }}</td>
-                </tr>
-                {% endfor %}
-                <tr style="background:#f9f9f9; font-weight:600;">
-                  <td colspan="5" style="text-align:right; color:#555; font-size:0.9rem;">Total do dia {{ formatar_data_br(data_grp) }}:</td>
-                  <td style="color:#555;">{{ "%.2f"|format(itens | sum(attribute='total')) }}</td>
-                  <td></td>
-                  <td colspan="2"></td>
-                </tr>
-              {% endfor %}
-            <tr class="tr-total">
-              <td colspan="5" style="text-align:right">Valor Total Geral:</td>
-              <td>{{ "%.2f"|format(compras | sum(attribute='total')) }}</td>
-              <td></td>
-              <td colspan="2"></td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
+  <div class="section-title rpt-title">
+    Fornecedor {{ nome_fornecedor_filtro }}
+  </div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-fit">Data</th>
+            <th>Produto</th>
+            <th>Tipo Caixa</th>
+            <th class="col-fit col-center">Qtd.</th>
+            <th class="col-fit col-right">Valor Unit. (R$)</th>
+            <th class="col-fit col-right">Total (R$)</th>
+            <th class="col-fit col-center">Pagamento</th>
+            <th>Anotação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not compras %}
+          <tr>
+            <td colspan="8" class="td-empty">
+              Nenhuma compra registrada para este fornecedor no período.
+            </td>
+          </tr>
+          {% else %} {% for data_grp, itens in
+          compras|groupby('data')|sort(attribute='grouper', reverse=True) %} {%
+          for c in itens %}
+          <tr>
+            <td class="col-fit">{{ formatar_data_br(c.data) }}</td>
+            <td>{{ c.produto }}</td>
+            <td>{{ c.tipo_caixa }}</td>
+            <td class="col-fit col-center">{{ c.quantidade }}</td>
+            <td class="col-fit col-right">
+              {{ "%.2f"|format(c.valor_unitario) }}
+            </td>
+            <td class="col-fit col-right">{{ "%.2f"|format(c.total) }}</td>
+            <td class="col-fit col-center">
+              {% if c.pago %}Sim{% else %}—{% endif %}
+            </td>
+            <td
+              contenteditable="true"
+              class="editable-col"
+              data-id="{{ c.id }}"
+              data-tipo="compra"
+              title="Clique para digitar (salva automaticamente)"
+            >
+              {{ c.anotacao or '' }}
+            </td>
+          </tr>
+          {% endfor %}
+          <tr style="background: #f9f9f9; font-weight: 600">
+            <td
+              colspan="5"
+              style="text-align: right; color: #555; font-size: 0.9rem"
+            >
+              Total do dia {{ formatar_data_br(data_grp) }}:
+            </td>
+            <td class="col-fit col-right" style="color: #555">
+              {{ "%.2f"|format(itens | sum(attribute='total')) }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+          {% endfor %}
+          <tr class="tr-total">
+            <td colspan="5" style="text-align: right">Valor Total Geral:</td>
+            <td class="col-fit col-right">
+              {{ "%.2f"|format(compras | sum(attribute='total')) }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-  {# ══════════════════════════════════════════════════════
-     MODO GERAL — relatório completo
-     ══════════════════════════════════════════════════════ #}
+  {# ══════════════════════════════════════════════════════ MODO GERAL —
+  relatório completo ══════════════════════════════════════════════════════ #}
   {% else %}
 
-    <div class="dashboard">
-      <div class="card">
-        <h3>Receita (Vendas)</h3>
-        <div class="value">R$ {{ "%.2f"|format(faturamento) }}</div>
-      </div>
-      <div class="card">
-        <h3>Custo (Compras)</h3>
-        <div class="value" style="color:var(--orange)">R$ {{ "%.2f"|format(custo_total) }}</div>
-      </div>
-      <div class="card">
-        <h3>Margem Bruta</h3>
-        <div class="value" style="color:{% if margem >= 0 %}var(--green){% else %}var(--orange){% endif %}">
-          R$ {{ "%.2f"|format(margem) }}
-        </div>
-        {% if faturamento > 0 %}
-        <div class="sub">{{ "%.1f"|format((margem / faturamento) * 100) }}% sobre receita</div>
-        {% endif %}
-      </div>
-      <div class="card">
-        <h3>Transações</h3>
-        <div class="value">{{ vendas|length }}</div>
-        <div class="sub">vendas registradas</div>
-      </div>
-      <div class="card">
-        <h3>Itens em Estoque</h3>
-        <div class="value">{{ estoque|length }}</div>
-        <div class="sub">produtos cadastrados</div>
+  <div class="dashboard">
+    <div class="card">
+      <h3>Receita (Vendas)</h3>
+      <div class="value">R$ {{ "%.2f"|format(faturamento) }}</div>
+    </div>
+    <div class="card">
+      <h3>Custo (Compras)</h3>
+      <div class="value" style="color: var(--orange)">
+        R$ {{ "%.2f"|format(custo_total) }}
       </div>
     </div>
+    <div class="card">
+      <h3>Margem Bruta</h3>
+      <div
+        class="value"
+        style="color:{% if margem >= 0 %}var(--green){% else %}var(--orange){% endif %}"
+      >
+        R$ {{ "%.2f"|format(margem) }}
+      </div>
+      {% if faturamento > 0 %}
+      <div class="sub">
+        {{ "%.1f"|format((margem / faturamento) * 100) }}% sobre receita
+      </div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>Transações</h3>
+      <div class="value">{{ vendas|length }}</div>
+      <div class="sub">vendas registradas</div>
+    </div>
+    <div class="card">
+      <h3>Itens em Estoque</h3>
+      <div class="value">{{ estoque|length }}</div>
+      <div class="sub">produtos cadastrados</div>
+    </div>
+  </div>
 
-    <div class="section-title rpt-title">Desempenho por Produto</div>
-    <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>#</th><th>Produto</th><th>Tipo de Caixa</th><th>Qtd. Vendida</th><th>Receita (R$)</th><th>Part. (%)</th></tr>
-          </thead>
-          <tbody>
-            {% for p in por_produto %}
-            <tr>
-              <td>{{ loop.index }}</td>
-              <td>{{ p.produto }}</td>
-              <td>{{ p.tipo_caixa }}</td>
-              <td>{{ p.qtd_total }}</td>
-              <td>{{ "%.2f"|format(p.receita) }}</td>
-              <td>{% if faturamento > 0 %}{{ "%.1f"|format((p.receita / faturamento) * 100) }}%{% else %}—{% endif %}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" class="td-empty">Nenhuma venda no período selecionado.</td></tr>
-            {% endfor %}
-            {% if por_produto %}
-            <tr class="tr-total">
-              <td colspan="3">Total</td>
-              <td>{{ por_produto | sum(attribute='qtd_total') }}</td>
-              <td>{{ "%.2f"|format(faturamento) }}</td>
-              <td>100%</td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
+  <div class="section-title rpt-title">Desempenho por Produto</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-fit">#</th>
+            <th>Produto</th>
+            <th>Tipo de Caixa</th>
+            <th class="col-fit col-center">Qtd. Vendida</th>
+            <th class="col-fit col-right">Receita (R$)</th>
+            <th class="col-fit col-center">Part. (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in por_produto %}
+          <tr>
+            <td class="col-fit">{{ loop.index }}</td>
+            <td>{{ p.produto }}</td>
+            <td>{{ p.tipo_caixa }}</td>
+            <td class="col-fit col-center">{{ p.qtd_total }}</td>
+            <td class="col-fit col-right">{{ "%.2f"|format(p.receita) }}</td>
+            <td class="col-fit col-center">
+              {% if faturamento > 0 %}{{ "%.1f"|format((p.receita / faturamento)
+              * 100) }}%{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="td-empty">
+              Nenhuma venda no período selecionado.
+            </td>
+          </tr>
+          {% endfor %} {% if por_produto %}
+          <tr class="tr-total">
+            <td colspan="3" style="text-align: right">Total</td>
+            <td class="col-fit col-center">
+              {{ por_produto | sum(attribute='qtd_total') }}
+            </td>
+            <td class="col-fit col-right">{{ "%.2f"|format(faturamento) }}</td>
+            <td class="col-fit col-center">100%</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <div class="section-title rpt-title">Posição de Estoque</div>
-    <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Produto</th><th>Tipo de Caixa</th><th>Fornecedor</th><th>Qtd. Disponível</th><th>Situação</th></tr>
-          </thead>
-          <tbody>
-            {% for e in estoque %}
-            <tr>
-              <td>{{ e.produto }}</td>
-              <td>{{ e.tipo_caixa }}</td>
-              <td>{{ e.fornecedor or '—' }}</td>
-              <td {% if e.quantidade <= 10 %}class="low-stock"{% endif %}>{{ e.quantidade }}</td>
-              <td>
-                {% if e.quantidade <= 10 %}
-                  <span class="badge badge-orange">Estoque Baixo</span>
-                {% else %}
-                  <span class="badge badge-green">Normal</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  <div class="section-title rpt-title">Posição de Estoque</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Tipo de Caixa</th>
+            <th>Fornecedor</th>
+            <th class="col-fit col-center">Qtd. Disponível</th>
+            <th class="col-fit col-center">Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in estoque %}
+          <tr>
+            <td>{{ e.produto }}</td>
+            <td>{{ e.tipo_caixa }}</td>
+            <td>{{ e.fornecedor or '—' }}</td>
+            <td
+              class="col-fit col-center {% if e.quantidade <= 10 %}low-stock{% endif %}"
+            >
+              {{ e.quantidade }}
+            </td>
+            <td class="col-fit col-center">
+              {% if e.quantidade <= 10 %}
+              <span class="badge badge-orange">Estoque Baixo</span>
+              {% else %}
+              <span class="badge badge-green">Normal</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <div class="section-title rpt-title">Compras por Fornecedor</div>
-    <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Data</th><th>Fornecedor</th><th>Produto</th><th>Tipo Caixa</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th></tr>
-          </thead>
-          <tbody>
-            {% for c in compras %}
-            <tr>
-              <td>{{ formatar_data_br(c.data) }}</td>
-              <td>{{ c.fornecedor }}</td>
-              <td>{{ c.produto }}</td>
-              <td>{{ c.tipo_caixa }}</td>
-              <td>{{ c.quantidade }}</td>
-              <td>{{ "%.2f"|format(c.valor_unitario) }}</td>
-              <td>{{ "%.2f"|format(c.total) }}</td>
-              <td>{% if c.pago %}Sim{% endif %}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="8" class="td-empty">Nenhuma compra no período selecionado.</td></tr>
-            {% endfor %}
-            {% if compras %}
-            <tr class="tr-total">
-              <td colspan="6" style="text-align:right">Total de Custos:</td>
-              <td>{{ "%.2f"|format(custo_total) }}</td>
-              <td></td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
+  <div class="section-title rpt-title">Compras por Fornecedor</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-fit">Data</th>
+            <th>Fornecedor</th>
+            <th>Produto</th>
+            <th>Tipo Caixa</th>
+            <th class="col-fit col-center">Qtd.</th>
+            <th class="col-fit col-right">Valor Unit. (R$)</th>
+            <th class="col-fit col-right">Total (R$)</th>
+            <th class="col-fit col-center">Pagamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in compras %}
+          <tr>
+            <td class="col-fit">{{ formatar_data_br(c.data) }}</td>
+            <td>{{ c.fornecedor }}</td>
+            <td>{{ c.produto }}</td>
+            <td>{{ c.tipo_caixa }}</td>
+            <td class="col-fit col-center">{{ c.quantidade }}</td>
+            <td class="col-fit col-right">
+              {{ "%.2f"|format(c.valor_unitario) }}
+            </td>
+            <td class="col-fit col-right">{{ "%.2f"|format(c.total) }}</td>
+            <td class="col-fit col-center">
+              {% if c.pago %}Sim{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="td-empty">
+              Nenhuma compra no período selecionado.
+            </td>
+          </tr>
+          {% endfor %} {% if compras %}
+          <tr class="tr-total">
+            <td colspan="6" style="text-align: right">Total de Custos:</td>
+            <td class="col-fit col-right">{{ "%.2f"|format(custo_total) }}</td>
+            <td class="col-fit col-center"></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <div class="section-title rpt-title">Histórico Detalhado de Vendas</div>
-    <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Data</th><th>Cliente</th><th>Produto</th><th>Tipo Caixa</th><th>Fornecedor</th><th>Qtd.</th><th>Valor Unit. (R$)</th><th>Total (R$)</th><th>Pagamento</th></tr>
-          </thead>
-          <tbody>
-            {% for v in vendas %}
-            <tr>
-              <td>{{ formatar_data_br(v.data) }}</td>
-              <td>{{ v.cliente }}</td>
-              <td>{{ v.produto }}</td>
-              <td>{{ v.tipo_caixa }}</td>
-              <td>{{ v.fornecedor or '—' }}</td>
-              <td>{{ v.quantidade }}</td>
-              <td>{{ "%.2f"|format(v.valor_unitario) }}</td>
-              <td>{{ "%.2f"|format(v.total) }}</td>
-              <td>{% if v.pago %}Sim{% endif %}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="9" class="td-empty">Nenhuma venda no período selecionado.</td></tr>
-            {% endfor %}
-            {% if vendas %}
-            <tr class="tr-total">
-              <td colspan="7" style="text-align:right">Total do Período:</td>
-              <td>{{ "%.2f"|format(faturamento) }}</td>
-              <td></td>
-            </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
+  <div class="section-title rpt-title">Histórico Detalhado de Vendas</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-fit">Data</th>
+            <th>Cliente</th>
+            <th>Produto</th>
+            <th>Tipo Caixa</th>
+            <th>Fornecedor</th>
+            <th class="col-fit col-center">Qtd.</th>
+            <th class="col-fit col-right">Valor Unit. (R$)</th>
+            <th class="col-fit col-right">Total (R$)</th>
+            <th class="col-fit col-center">Pagamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in vendas %}
+          <tr>
+            <td class="col-fit">{{ formatar_data_br(v.data) }}</td>
+            <td>{{ v.cliente }}</td>
+            <td>{{ v.produto }}</td>
+            <td>{{ v.tipo_caixa }}</td>
+            <td>{{ v.fornecedor or '—' }}</td>
+            <td class="col-fit col-center">{{ v.quantidade }}</td>
+            <td class="col-fit col-right">
+              {{ "%.2f"|format(v.valor_unitario) }}
+            </td>
+            <td class="col-fit col-right">{{ "%.2f"|format(v.total) }}</td>
+            <td class="col-fit col-center">
+              {% if v.pago %}Sim{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="td-empty">
+              Nenhuma venda no período selecionado.
+            </td>
+          </tr>
+          {% endfor %} {% if vendas %}
+          <tr class="tr-total">
+            <td colspan="7" style="text-align: right">Total do Período:</td>
+            <td class="col-fit col-right">{{ "%.2f"|format(faturamento) }}</td>
+            <td class="col-fit col-center"></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </div>
+  </div>
 
   {% endif %}
 
   <div class="print-footer">
-    AgroFrutt &mdash; Documento gerado automaticamente pelo sistema &mdash; {{ data_fim }}
+    AgroFrutt &mdash; Documento gerado automaticamente pelo sistema &mdash; {{
+    data_fim }}
   </div>
-
 </div>
 
 <script>
-document.querySelectorAll('.editable-col').forEach(col => {
-  col.addEventListener('blur', function() {
-    const id = this.getAttribute('data-id');
-    const tipo = this.getAttribute('data-tipo');
-    const texto = this.innerText.trim();
-    
-    const formData = new FormData();
-    formData.append("anotacao", texto);
-    
-    fetch(`/${tipo}/anotacao/${id}`, {
-      method: "POST",
-      body: formData
-    }).catch(console.error);
+  document.querySelectorAll(".editable-col").forEach((col) => {
+    col.addEventListener("blur", function () {
+      const id = this.getAttribute("data-id");
+      const tipo = this.getAttribute("data-tipo");
+      const texto = this.innerText.trim();
+
+      const formData = new FormData();
+      formData.append("anotacao", texto);
+
+      fetch(`/${tipo}/anotacao/${id}`, {
+        method: "POST",
+        body: formData,
+      }).catch(console.error);
+    });
   });
-});
 </script>
 
 <style>
-.lbl-filtro { font-size:.85rem; color:#555; }
-.rpt-title { font-size:.9rem; text-transform:uppercase; letter-spacing:.06em; color:var(--green); border-left:3px solid var(--green); padding-left:.5rem; }
-.tr-total td { font-weight:700; background:#e8f5e9; border-top:2px solid var(--green); }
-.td-empty { text-align:center; color:#999; font-style:italic; padding:1rem; }
-.print-header, .print-footer, .print-divider { display:none; }
+  .lbl-filtro {
+    font-size: 0.85rem;
+    color: #555;
+  }
+  .rpt-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+    border-left: 3px solid var(--green);
+    padding-left: 0.5rem;
+  }
+  .tr-total td {
+    font-weight: 700;
+    background: #e8f5e9;
+    border-top: 2px solid var(--green);
+  }
+  .td-empty {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 1rem;
+  }
+  .print-header,
+  .print-footer,
+  .print-divider {
+    display: none;
+  }
 
-.editable-col {
-  cursor: text;
-  background: #fffdf5;
-  border: 1px dashed #e0e0e0;
-  outline: none;
-  min-width: 80px;
-}
-.editable-col:focus {
-  background: #fff;
-  border-color: var(--green);
-}
+  .col-fit {
+    width: 1%;
+    white-space: nowrap;
+  }
+  .col-center {
+    text-align: center;
+  }
+  .col-right {
+    text-align: right;
+  }
 
-@media print {
-  nav, .page-header, .panel:has(form), .btn-rel-action { display:none !important; }
-  body { background:#fff; font-size:11pt; }
-  .container { max-width:100%; padding:0; }
-  .print-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; }
-  .print-logo { display: block;font-size: 1.6rem; font-weight: 800; color: #2e7d32; margin-bottom: 2px; }
-  .print-email { display: block;font-size: 1.2rem; font-weight: 800; color: #c78503; margin-bottom: 2px; }
-  .print-tel { display: block;font-size: 1.2rem; font-weight: 800; color: #c78503; }
-  .print-logo { font-size:1.6rem; font-weight:800; color:#2e7d32; }
-  .print-email { font-size:1.2rem; font-weight:800; color:#c78503; }
-  .print-tel { font-size:1.2rem; font-weight:800; color:#c78503; }
-  .print-meta { font-size:.8rem; text-align:right; color:#444; line-height:1.5; }
-  .print-divider { display:block; border:none; border-top:2px solid #2e7d32; margin-bottom:1rem; }
-  .print-footer { display:block; text-align:center; font-size:.75rem; color:#888; margin-top:2rem; border-top:1px solid #ccc; padding-top:.5rem; }
-  .panel { box-shadow:none; border:1px solid #ddd; margin-bottom:.8rem; }
-  table { font-size:9pt; }
-  th { background:#2e7d32 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .rpt-title { color:#000; border-left-color:#2e7d32; }
-  tr { page-break-inside:avoid; }
-  .editable-col { border: none !important; background: transparent !important; }
-}
+  .editable-col {
+    cursor: text;
+    background: #fffdf5;
+    border: 1px dashed #e0e0e0;
+    outline: none;
+    min-width: 80px;
+  }
+  .editable-col:focus {
+    background: #fff;
+    border-color: var(--green);
+  }
+
+  @media print {
+    nav,
+    .page-header,
+    .panel:has(form),
+    .btn-rel-action {
+      display: none !important;
+    }
+    body {
+      background: #fff;
+      font-size: 11pt;
+    }
+    .container {
+      max-width: 100%;
+      padding: 0;
+    }
+    .print-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.6rem;
+    }
+    .print-logo {
+      display: block;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #2e7d32;
+      margin-bottom: 2px;
+    }
+    .print-email {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #c78503;
+      margin-bottom: 2px;
+    }
+    .print-tel {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #c78503;
+    }
+    .print-logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #2e7d32;
+    }
+    .print-email {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #c78503;
+    }
+    .print-tel {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #c78503;
+    }
+    .print-meta {
+      font-size: 0.8rem;
+      text-align: right;
+      color: #444;
+      line-height: 1.5;
+    }
+    .print-divider {
+      display: block;
+      border: none;
+      border-top: 2px solid #2e7d32;
+      margin-bottom: 1rem;
+    }
+    .print-footer {
+      display: block;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 2rem;
+      border-top: 1px solid #ccc;
+      padding-top: 0.5rem;
+    }
+    .panel {
+      box-shadow: none;
+      border: 1px solid #ddd;
+      margin-bottom: 0.8rem;
+    }
+    table {
+      font-size: 9pt;
+    }
+    th {
+      background: #2e7d32 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .rpt-title {
+      color: #000;
+      border-left-color: #2e7d32;
+    }
+    tr {
+      page-break-inside: avoid;
+    }
+    .editable-col {
+      border: none !important;
+      background: transparent !important;
+    }
+  }
 </style>
 
 {% endblock %}
