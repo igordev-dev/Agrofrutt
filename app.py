@@ -488,11 +488,12 @@ def add_compra():
     estoque_id    = request.form["estoque_id"]
     qtd           = int(request.form["quantidade"])
     valor         = float(request.form["valor_unitario"])
+    data          = request.form.get("data") or str(date.today())
 
     # Registra a compra e dá entrada automática no estoque
     execute(
-        f"INSERT INTO compras (fornecedor_id, estoque_id, quantidade, valor_unitario) VALUES ({PH},{PH},{PH},{PH})",
-        (fornecedor_id, estoque_id, qtd, valor)
+        f"INSERT INTO compras (fornecedor_id, estoque_id, quantidade, valor_unitario, data) VALUES ({PH},{PH},{PH},{PH},{PH})",
+        (fornecedor_id, estoque_id, qtd, valor, data)
     )
     execute(
         f"UPDATE estoque SET quantidade = quantidade + {PH}, fornecedor_id={PH} WHERE id={PH}",
