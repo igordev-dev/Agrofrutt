@@ -1,6 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, Response, session
 import csv, io, os
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
+
+BRT = timezone(timedelta(hours=-3))
+
+def hoje_brt():
+    return datetime.now(BRT).strftime("%Y-%m-%d")
 from functools import wraps
 
 app = Flask(__name__)
@@ -488,7 +493,7 @@ def add_compra():
     estoque_id    = request.form["estoque_id"]
     qtd           = int(request.form["quantidade"])
     valor         = float(request.form["valor_unitario"])
-    data          = request.form.get("data") or str(date.today())
+    data          = request.form.get("data") or hoje_brt()
 
     # Registra a compra e dá entrada automática no estoque
     execute(
@@ -560,7 +565,7 @@ def pagamento_compra(id):
 @login_required
 def relatorio():
     data_ini   = request.args.get("data_ini", "")
-    data_fim   = request.args.get("data_fim", str(date.today()))
+    data_fim   = request.args.get("data_fim", hoje_brt())
     cliente_id    = request.args.get("cliente_id", "")
     fornecedor_id = request.args.get("fornecedor_id", "")
 
@@ -654,7 +659,7 @@ def relatorio():
 @login_required
 def relatorio_csv():
     data_ini = request.args.get("data_ini", "")
-    data_fim = request.args.get("data_fim", str(date.today()))
+    data_fim = request.args.get("data_fim", hoje_brt())
     filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
     filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
 
