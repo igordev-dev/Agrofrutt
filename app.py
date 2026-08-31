@@ -402,7 +402,7 @@ def clientes():
         FROM vendas v
         JOIN clientes c ON v.cliente_id = c.id
         JOIN estoque e ON v.estoque_id = e.id
-        ORDER BY v.data DESC LIMIT 50
+        ORDER BY v.data DESC LIMIT 120
     """)
     estoque = query("SELECT * FROM estoque ORDER BY produto")
     return render_template("clientes.html", clientes=lista, historico=historico, estoque=estoque,
@@ -450,7 +450,7 @@ def fornecedores():
         FROM compras c
         JOIN fornecedores f ON c.fornecedor_id = f.id
         JOIN estoque e ON c.estoque_id = e.id
-        ORDER BY c.data DESC LIMIT 50
+        ORDER BY c.data DESC LIMIT 120
     """)
     return render_template("fornecedores.html",
         fornecedores=lista, estoque=estoque, compras=compras,
