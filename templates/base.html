@@ -18,6 +18,7 @@
         >
       </div>
       <div class="nav-btns">
+        <a href="/caixas" {% if request.path == "/caixas" %}class="active"{% endif %}>Caixa</a>
         <a
           href="/clientes"
           {% if request.path == "/clientes" %}class="active"{% endif %}

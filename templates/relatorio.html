@@ -489,6 +489,34 @@
     </div>
   </div>
 
+  <div class="section-title rpt-title">Caixas</div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-fit">Data</th>
+            <th>Tipo</th>
+            <th class="col-fit col-center">Quantidade</th>
+            <th class="col-fit col-center">Recebido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cx in caixas_rel %}
+          <tr>
+            <td class="col-fit">{{ formatar_data_br(cx.data) }}</td>
+            <td>{{ cx.tipo }}</td>
+            <td class="col-fit col-center">{{ cx.quantidade }}</td>
+            <td class="col-fit col-center">{% if cx.pago %}Sim{% else %}Não{% endif %}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="td-empty">Nenhum registro de caixa no período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   {% endif %}
 
   <div class="print-footer">

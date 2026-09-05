@@ -1,0 +1,89 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="page-header">
+  <h1>📦 Caixas</h1>
+</div>
+
+<div class="panel">
+  <div class="section-title">Registrar Caixa</div>
+  <form action="/caixa/add" method="POST">
+    <div class="form-row">
+      <select name="tipo" required>
+        <option value="">Tipo de Caixa</option>
+        <option value="Plástica">Plástica</option>
+        <option value="Papelão">Papelão</option>
+        <option value="Madeira">Madeira</option>
+      </select>
+      <input type="number" name="quantidade" placeholder="Quantidade" min="1" required />
+      <input type="date" name="data" />
+      <select name="pago">
+        <option value="0">Não Recebido</option>
+        <option value="1">Recebido</option>
+      </select>
+      <button type="submit">Registrar</button>
+    </div>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="section-title">Histórico de Caixas</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-fit">Data</th>
+          <th>Tipo</th>
+          <th class="col-fit col-center">Quantidade</th>
+          <th class="col-fit col-center">Recebido</th>
+          <th class="col-fit col-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in caixas %}
+        <tr>
+          <td class="col-fit">{{ formatar_data_br(c.data) }}</td>
+          <td>{{ c.tipo }}</td>
+          <td class="col-fit col-center">{{ c.quantidade }}</td>
+          <td class="col-fit col-center">
+            {% if c.pago %}<span class="badge badge-green">Sim</span>
+            {% else %}<span class="badge badge-orange">Não</span>{% endif %}
+          </td>
+          <td class="col-fit col-center" style="white-space:nowrap">
+            <button onclick="openModal('Editar Caixa', `
+              <form action='/caixa/edit/{{ c.id }}' method='POST'>
+                <div class='form-row' style='flex-direction:column'>
+                  <select name='tipo' required>
+                    <option value='Plástica' {% if c.tipo=='Plástica' %}selected{% endif %}>Plástica</option>
+                    <option value='Papelão' {% if c.tipo=='Papelão' %}selected{% endif %}>Papelão</option>
+                    <option value='Madeira' {% if c.tipo=='Madeira' %}selected{% endif %}>Madeira</option>
+                  </select>
+                  <input type='number' name='quantidade' value='{{ c.quantidade }}' min='1' required />
+                  <input type='date' name='data' value='{{ c.data }}' />
+                  <select name='pago'>
+                    <option value='0' {% if not c.pago %}selected{% endif %}>Não Recebido</option>
+                    <option value='1' {% if c.pago %}selected{% endif %}>Recebido</option>
+                  </select>
+                  <button type='submit'>Salvar</button>
+                </div>
+              </form>
+            `)">✏️</button>
+            <a href="/caixa/delete/{{ c.id }}"
+               onclick="return confirm('Excluir este registro?')"
+               class="btn" style="background:#e53935;padding:0.3rem 0.6rem">🗑️</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="td-empty">Nenhum registro de caixa.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .col-fit { width: 1%; white-space: nowrap; }
+  .col-center { text-align: center; }
+  .td-empty { text-align: center; color: #999; font-style: italic; padding: 1rem; }
+</style>
+
+{% endblock %}

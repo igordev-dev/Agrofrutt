@@ -157,6 +157,27 @@ def init_db():
         except Exception:
             pass
 
+    if DATABASE_URL:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS caixas (
+                id SERIAL PRIMARY KEY,
+                tipo TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                data DATE DEFAULT CURRENT_DATE,
+                pago INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+    else:
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS caixas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                data TEXT DEFAULT (date('now')),
+                pago INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
     for tabela in ("vendas", "compras"):
         try:
             cur.execute(f"ALTER TABLE {tabela} ADD COLUMN pago INTEGER NOT NULL DEFAULT 0")
@@ -393,6 +414,45 @@ def pagamento_venda(id):
 
 
 
+# ── CAIXAS ────────────────────────────────────────────────────────────────────
+
+@app.route("/caixas")
+@login_required
+def caixas():
+    lista = query("SELECT * FROM caixas ORDER BY data DESC LIMIT 120")
+    return render_template("caixas.html", caixas=lista, formatar_data_br=formatar_data_br)
+
+
+@app.route("/caixa/add", methods=["POST"])
+@login_required
+def add_caixa():
+    execute(
+        f"INSERT INTO caixas (tipo, quantidade, data, pago) VALUES ({PH},{PH},{PH},{PH})",
+        (request.form["tipo"], int(request.form["quantidade"]),
+         request.form.get("data") or hoje_brt(), 1 if request.form.get("pago") == "1" else 0)
+    )
+    return redirect(url_for("caixas"))
+
+
+@app.route("/caixa/edit/<int:id>", methods=["POST"])
+@login_required
+def edit_caixa(id):
+    execute(
+        f"UPDATE caixas SET tipo={PH}, quantidade={PH}, data={PH}, pago={PH} WHERE id={PH}",
+        (request.form["tipo"], int(request.form["quantidade"]),
+         request.form.get("data") or hoje_brt(),
+         1 if request.form.get("pago") == "1" else 0, id)
+    )
+    return redirect(url_for("caixas"))
+
+
+@app.route("/caixa/delete/<int:id>")
+@login_required
+def del_caixa(id):
+    execute(f"DELETE FROM caixas WHERE id={PH}", (id,))
+    return redirect(url_for("caixas"))
+
+
 @app.route("/clientes")
 @login_required
 def clientes():
@@ -582,6 +642,8 @@ def relatorio():
         filtro_c += f" AND c.fornecedor_id = {PH}"
         params_c.append(fornecedor_id)
 
+    filtro_cx, params_cx = _filtro_periodo(data_ini, data_fim, alias="cx")
+
     todos_clientes    = query("SELECT id, nome FROM clientes ORDER BY nome")
     todos_fornecedores = query("SELECT id, nome FROM fornecedores ORDER BY nome")
 
@@ -643,10 +705,15 @@ def relatorio():
         ORDER BY e.produto
     """)
 
+    caixas_rel = query(f"""
+        SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC
+    """, params_cx)
+
     return render_template("relatorio.html",
         vendas=vendas, faturamento=faturamento,
         por_produto=por_produto, estoque=estoque,
         compras=compras, custo_total=custo_total, margem=margem,
+        caixas_rel=caixas_rel,
         data_ini=data_ini, data_fim=data_fim,
         cliente_id=cliente_id, todos_clientes=todos_clientes,
         nome_cliente_filtro=nome_cliente_filtro,
@@ -662,8 +729,9 @@ def relatorio_csv():
     data_fim = request.args.get("data_fim", hoje_brt())
     filtro_v, params_v = _filtro_periodo(data_ini, data_fim, alias="v")
     filtro_c, params_c = _filtro_periodo(data_ini, data_fim, alias="c")
+    filtro_cx, params_cx = _filtro_periodo(data_ini, data_fim, alias="cx")
 
-    vendas = query(f"""
+    vendas_csv = query(f"""
         SELECT v.id, v.data, c.nome as cliente, e.produto, e.tipo_caixa,
                v.quantidade, v.valor_unitario,
                (v.quantidade * v.valor_unitario) as total,
@@ -677,7 +745,7 @@ def relatorio_csv():
         ORDER BY v.data DESC
     """, params_v)
 
-    compras = query(f"""
+    compras_csv = query(f"""
         SELECT c.id, c.data, f.nome as fornecedor, e.produto, e.tipo_caixa,
                c.quantidade, c.valor_unitario,
                (c.quantidade * c.valor_unitario) as total,
@@ -689,12 +757,14 @@ def relatorio_csv():
         ORDER BY c.data DESC
     """, params_c)
 
+    caixas_csv = query(f"SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC", params_cx)
+
     output = io.StringIO()
     writer = csv.writer(output)
 
     writer.writerow(["=== VENDAS ==="])
     writer.writerow(["Data", "Cliente", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)", "Fornecedor", "Pagamento", "Anotacao"])
-    for r in vendas:
+    for r in vendas_csv:
         writer.writerow([r["data"], r["cliente"], r["produto"], r["tipo_caixa"],
                          r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
                          f'{float(r["total"]):.2f}', r["fornecedor"] or "", "Sim" if r["pago"] else "", r["anotacao"] or ""])
@@ -702,10 +772,16 @@ def relatorio_csv():
     writer.writerow([])
     writer.writerow(["=== COMPRAS ==="])
     writer.writerow(["Data", "Fornecedor", "Produto", "Tipo Caixa", "Qtd", "Valor Unit. (R$)", "Total (R$)", "Pagamento", "Anotacao"])
-    for r in compras:
+    for r in compras_csv:
         writer.writerow([r["data"], r["fornecedor"], r["produto"], r["tipo_caixa"],
                          r["quantidade"], f'{float(r["valor_unitario"]):.2f}',
                          f'{float(r["total"]):.2f}', "Sim" if r["pago"] else "", r["anotacao"] or ""])
+
+    writer.writerow([])
+    writer.writerow(["=== CAIXAS ==="])
+    writer.writerow(["Data", "Tipo", "Quantidade", "Recebido"])
+    for r in caixas_csv:
+        writer.writerow([r["data"], r["tipo"], r["quantidade"], "Sim" if r["pago"] else "Não"])
 
     output.seek(0)
     # BOM UTF-8 garante que o Excel abra com acentos corretamente
