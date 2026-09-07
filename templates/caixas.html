@@ -16,13 +16,13 @@
       </select>
       <input type="number" name="quantidade" placeholder="Quantidade" min="1" required />
       <input type="date" name="data" />
-      <select name="cliente_id">
+      <select name="cliente_id" id="reg-cliente" onchange="togglePessoa('reg-cliente','reg-fornecedor')">
         <option value="">— Cliente (opcional) —</option>
         {% for c in clientes %}
         <option value="{{ c.id }}">{{ c.nome }}</option>
         {% endfor %}
       </select>
-      <select name="fornecedor_id">
+      <select name="fornecedor_id" id="reg-fornecedor" onchange="togglePessoa('reg-fornecedor','reg-cliente')">
         <option value="">— Fornecedor (opcional) —</option>
         {% for f in fornecedores %}
         <option value="{{ f.id }}">{{ f.nome }}</option>
@@ -149,6 +149,19 @@
     </table>
   </div>
 </div>
+
+<script>
+  function togglePessoa(ativado, desativado) {
+    const sel = document.getElementById(ativado);
+    const outro = document.getElementById(desativado);
+    if (sel.value) {
+      outro.value = '';
+      outro.disabled = true;
+    } else {
+      outro.disabled = false;
+    }
+  }
+</script>
 
 <style>
   .col-fit { width: 1%; white-space: nowrap; }

@@ -749,7 +749,11 @@ def relatorio():
 
     try:
         caixas_rel = query(f"""
-            SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC
+            SELECT cx.*, cl.nome as cliente_nome, f.nome as fornecedor_nome
+            FROM caixas cx
+            LEFT JOIN clientes cl ON cx.cliente_id = cl.id
+            LEFT JOIN fornecedores f ON cx.fornecedor_id = f.id
+            WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC
         """, params_cx)
     except Exception:
         caixas_rel = []
@@ -803,7 +807,13 @@ def relatorio_csv():
     """, params_c)
 
     try:
-        caixas_csv = query(f"SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC", params_cx)
+        caixas_csv = query(f"""
+            SELECT cx.*, cl.nome as cliente_nome, f.nome as fornecedor_nome
+            FROM caixas cx
+            LEFT JOIN clientes cl ON cx.cliente_id = cl.id
+            LEFT JOIN fornecedores f ON cx.fornecedor_id = f.id
+            WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC
+        """, params_cx)
     except Exception:
         caixas_csv = []
 
@@ -827,9 +837,9 @@ def relatorio_csv():
 
     writer.writerow([])
     writer.writerow(["=== CAIXAS ==="])
-    writer.writerow(["Data", "Tipo", "Quantidade", "Recebido"])
+    writer.writerow(["Data", "Tipo", "Cliente", "Fornecedor", "Quantidade", "Recebido"])
     for r in caixas_csv:
-        writer.writerow([r["data"], r["tipo"], r["quantidade"], "Sim" if r["pago"] else "Não"])
+        writer.writerow([r["data"], r["tipo"], r.get("cliente_nome") or "", r.get("fornecedor_nome") or "", r["quantidade"], "Sim" if r["pago"] else "Não"])
 
     output.seek(0)
     # BOM UTF-8 garante que o Excel abra com acentos corretamente

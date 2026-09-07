@@ -496,27 +496,40 @@
         <thead>
           <tr>
             <th>Tipo</th>
-            <th class="col-fit col-center">Total Registrado</th>
+            <th>Cliente / Fornecedor</th>
+            <th class="col-fit col-center">Total</th>
             <th class="col-fit col-center">Recebido</th>
-            <th class="col-fit col-center">Não Recebido</th>
+            <th class="col-fit col-center">Pendente</th>
           </tr>
         </thead>
         <tbody>
-          {% set tipos = caixas_rel | map(attribute='tipo') | unique | list %}
-          {% for tipo in tipos %}
-          {% set itens_tipo = caixas_rel | selectattr('tipo', 'equalto', tipo) | list %}
-          <tr>
-            <td>{{ tipo }}</td>
-            <td class="col-fit col-center">{{ itens_tipo | sum(attribute='quantidade') }}</td>
-            <td class="col-fit col-center">{{ itens_tipo | selectattr('pago') | sum(attribute='quantidade') }}</td>
-            <td class="col-fit col-center">{{ itens_tipo | rejectattr('pago') | sum(attribute='quantidade') }}</td>
-          </tr>
-          {% else %}
-          <tr><td colspan="4" class="td-empty">Nenhum registro de caixa no período.</td></tr>
+          {% set pessoas = [] %}
+          {% for cx in caixas_rel %}
+            {% set nome = cx.cliente_nome or cx.fornecedor_nome or '— Sem vínculo —' %}
+            {% if nome not in pessoas %}{% set _ = pessoas.append(nome) %}{% endif %}
           {% endfor %}
-          {% if tipos %}
+          {% for pessoa in pessoas %}
+            {% set itens = caixas_rel | selectattr('cliente_nome', 'equalto', pessoa) | list
+                         + caixas_rel | selectattr('fornecedor_nome', 'equalto', pessoa) | list %}
+            {% if pessoa == '— Sem vínculo —' %}
+              {% set itens = caixas_rel | selectattr('cliente_nome', 'none') | selectattr('fornecedor_nome', 'none') | list %}
+            {% endif %}
+            {% set total    = itens | sum(attribute='quantidade') %}
+            {% set recebido = itens | selectattr('pago') | sum(attribute='quantidade') %}
+            {% set pendente = total - recebido %}
+            <tr>
+              <td>{{ itens | map(attribute='tipo') | unique | join(', ') }}</td>
+              <td>{{ pessoa }}</td>
+              <td class="col-fit col-center">{{ total }}</td>
+              <td class="col-fit col-center" style="color:var(--green)">{{ recebido }}</td>
+              <td class="col-fit col-center" style="color:{% if pendente > 0 %}var(--orange){% else %}inherit{% endif %}">{{ pendente }}</td>
+            </tr>
+          {% else %}
+          <tr><td colspan="5" class="td-empty">Nenhum registro de caixa no período.</td></tr>
+          {% endfor %}
+          {% if pessoas %}
           <tr class="tr-total">
-            <td style="text-align:right">Total Geral</td>
+            <td colspan="2" style="text-align:right">Total Geral</td>
             <td class="col-fit col-center">{{ caixas_rel | sum(attribute='quantidade') }}</td>
             <td class="col-fit col-center">{{ caixas_rel | selectattr('pago') | sum(attribute='quantidade') }}</td>
             <td class="col-fit col-center">{{ caixas_rel | rejectattr('pago') | sum(attribute='quantidade') }}</td>
@@ -533,6 +546,8 @@
             <tr>
               <th class="col-fit">Data</th>
               <th>Tipo</th>
+              <th>Cliente</th>
+              <th>Fornecedor</th>
               <th class="col-fit col-center">Quantidade</th>
               <th class="col-fit col-center">Recebido</th>
             </tr>
@@ -542,6 +557,8 @@
             <tr>
               <td class="col-fit">{{ formatar_data_br(cx.data) }}</td>
               <td>{{ cx.tipo }}</td>
+              <td>{{ cx.cliente_nome or '—' }}</td>
+              <td>{{ cx.fornecedor_nome or '—' }}</td>
               <td class="col-fit col-center">{{ cx.quantidade }}</td>
               <td class="col-fit col-center">{% if cx.pago %}Sim{% else %}Não{% endif %}</td>
             </tr>
