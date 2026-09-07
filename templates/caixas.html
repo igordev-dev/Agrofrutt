@@ -16,6 +16,18 @@
       </select>
       <input type="number" name="quantidade" placeholder="Quantidade" min="1" required />
       <input type="date" name="data" />
+      <select name="cliente_id">
+        <option value="">— Cliente (opcional) —</option>
+        {% for c in clientes %}
+        <option value="{{ c.id }}">{{ c.nome }}</option>
+        {% endfor %}
+      </select>
+      <select name="fornecedor_id">
+        <option value="">— Fornecedor (opcional) —</option>
+        {% for f in fornecedores %}
+        <option value="{{ f.id }}">{{ f.nome }}</option>
+        {% endfor %}
+      </select>
       <select name="pago">
         <option value="0">Não Recebido</option>
         <option value="1">Recebido</option>
@@ -25,6 +37,48 @@
   </form>
 </div>
 
+<!-- Resumo por pessoa -->
+{% if caixas %}
+<div class="panel">
+  <div class="section-title">Resumo por Cliente / Fornecedor</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th class="col-fit col-center">Total Caixas</th>
+          <th class="col-fit col-center">Recebido</th>
+          <th class="col-fit col-center">Pendente</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set pessoas = [] %}
+        {% for cx in caixas %}
+          {% if cx.cliente_nome and cx.cliente_nome not in pessoas %}{% set _ = pessoas.append(cx.cliente_nome) %}{% endif %}
+          {% if cx.fornecedor_nome and cx.fornecedor_nome not in pessoas %}{% set _ = pessoas.append(cx.fornecedor_nome) %}{% endif %}
+        {% endfor %}
+
+        {% for pessoa in pessoas %}
+          {% set itens = caixas | selectattr('cliente_nome', 'equalto', pessoa) | list
+                       + caixas | selectattr('fornecedor_nome', 'equalto', pessoa) | list %}
+          {% set total = itens | sum(attribute='quantidade') %}
+          {% set recebido = itens | selectattr('pago') | sum(attribute='quantidade') %}
+          {% set pendente = total - recebido %}
+          <tr>
+            <td>{{ pessoa }}</td>
+            <td>{{ itens | map(attribute='tipo') | unique | join(', ') }}</td>
+            <td class="col-fit col-center">{{ total }}</td>
+            <td class="col-fit col-center" style="color:var(--green)">{{ recebido }}</td>
+            <td class="col-fit col-center" style="color:{% if pendente > 0 %}var(--orange){% else %}inherit{% endif %}">{{ pendente }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 <div class="panel">
   <div class="section-title">Histórico de Caixas</div>
   <div class="table-wrap">
@@ -33,7 +87,9 @@
         <tr>
           <th class="col-fit">Data</th>
           <th>Tipo</th>
-          <th class="col-fit col-center">Quantidade</th>
+          <th class="col-fit col-center">Qtd.</th>
+          <th>Cliente</th>
+          <th>Fornecedor</th>
           <th class="col-fit col-center">Recebido</th>
           <th class="col-fit col-center">Ações</th>
         </tr>
@@ -44,6 +100,8 @@
           <td class="col-fit">{{ formatar_data_br(c.data) }}</td>
           <td>{{ c.tipo }}</td>
           <td class="col-fit col-center">{{ c.quantidade }}</td>
+          <td>{{ c.cliente_nome or '—' }}</td>
+          <td>{{ c.fornecedor_nome or '—' }}</td>
           <td class="col-fit col-center">
             {% if c.pago %}<span class="badge badge-green">Sim</span>
             {% else %}<span class="badge badge-orange">Não</span>{% endif %}
@@ -59,6 +117,18 @@
                   </select>
                   <input type='number' name='quantidade' value='{{ c.quantidade }}' min='1' required />
                   <input type='date' name='data' value='{{ c.data }}' />
+                  <select name='cliente_id'>
+                    <option value=''>— Cliente —</option>
+                    {% for cl in clientes %}
+                    <option value='{{ cl.id }}' {% if c.cliente_id == cl.id %}selected{% endif %}>{{ cl.nome }}</option>
+                    {% endfor %}
+                  </select>
+                  <select name='fornecedor_id'>
+                    <option value=''>— Fornecedor —</option>
+                    {% for f in fornecedores %}
+                    <option value='{{ f.id }}' {% if c.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+                    {% endfor %}
+                  </select>
                   <select name='pago'>
                     <option value='0' {% if not c.pago %}selected{% endif %}>Não Recebido</option>
                     <option value='1' {% if c.pago %}selected{% endif %}>Recebido</option>
@@ -73,7 +143,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="td-empty">Nenhum registro de caixa.</td></tr>
+        <tr><td colspan="7" class="td-empty">Nenhum registro de caixa.</td></tr>
         {% endfor %}
       </tbody>
     </table>

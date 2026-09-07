@@ -414,17 +414,32 @@ def pagamento_venda(id):
 @app.route("/caixas")
 @login_required
 def caixas():
+    clientes     = query("SELECT id, nome FROM clientes ORDER BY nome")
+    fornecedores = query("SELECT id, nome FROM fornecedores ORDER BY nome")
     try:
-        lista = query("SELECT * FROM caixas ORDER BY data DESC LIMIT 120")
+        # Garante colunas cliente_id / fornecedor_id existam
+        for col in ("cliente_id", "fornecedor_id"):
+            try:
+                execute(f"ALTER TABLE caixas ADD COLUMN {col} INTEGER")
+            except Exception:
+                pass
+        lista = query("""
+            SELECT cx.*, cl.nome as cliente_nome, f.nome as fornecedor_nome
+            FROM caixas cx
+            LEFT JOIN clientes cl ON cx.cliente_id = cl.id
+            LEFT JOIN fornecedores f ON cx.fornecedor_id = f.id
+            ORDER BY cx.data DESC LIMIT 120
+        """)
     except Exception:
-        # Tabela ainda não existe — cria agora
         execute("""
             CREATE TABLE IF NOT EXISTS caixas (
                 id SERIAL PRIMARY KEY,
                 tipo TEXT NOT NULL,
                 quantidade INTEGER NOT NULL,
                 data DATE DEFAULT CURRENT_DATE,
-                pago INTEGER NOT NULL DEFAULT 0
+                pago INTEGER NOT NULL DEFAULT 0,
+                cliente_id INTEGER,
+                fornecedor_id INTEGER
             )
         """ if DATABASE_URL else """
             CREATE TABLE IF NOT EXISTS caixas (
@@ -432,20 +447,28 @@ def caixas():
                 tipo TEXT NOT NULL,
                 quantidade INTEGER NOT NULL,
                 data TEXT DEFAULT (date('now')),
-                pago INTEGER NOT NULL DEFAULT 0
+                pago INTEGER NOT NULL DEFAULT 0,
+                cliente_id INTEGER,
+                fornecedor_id INTEGER
             )
         """)
         lista = []
-    return render_template("caixas.html", caixas=lista, formatar_data_br=formatar_data_br)
+    return render_template("caixas.html", caixas=lista,
+                           clientes=clientes, fornecedores=fornecedores,
+                           formatar_data_br=formatar_data_br)
 
 
 @app.route("/caixa/add", methods=["POST"])
 @login_required
 def add_caixa():
+    cliente_id    = request.form.get("cliente_id") or None
+    fornecedor_id = request.form.get("fornecedor_id") or None
     execute(
-        f"INSERT INTO caixas (tipo, quantidade, data, pago) VALUES ({PH},{PH},{PH},{PH})",
+        f"INSERT INTO caixas (tipo, quantidade, data, pago, cliente_id, fornecedor_id) VALUES ({PH},{PH},{PH},{PH},{PH},{PH})",
         (request.form["tipo"], int(request.form["quantidade"]),
-         request.form.get("data") or hoje_brt(), 1 if request.form.get("pago") == "1" else 0)
+         request.form.get("data") or hoje_brt(),
+         1 if request.form.get("pago") == "1" else 0,
+         cliente_id, fornecedor_id)
     )
     return redirect(url_for("caixas"))
 
@@ -453,11 +476,14 @@ def add_caixa():
 @app.route("/caixa/edit/<int:id>", methods=["POST"])
 @login_required
 def edit_caixa(id):
+    cliente_id    = request.form.get("cliente_id") or None
+    fornecedor_id = request.form.get("fornecedor_id") or None
     execute(
-        f"UPDATE caixas SET tipo={PH}, quantidade={PH}, data={PH}, pago={PH} WHERE id={PH}",
+        f"UPDATE caixas SET tipo={PH}, quantidade={PH}, data={PH}, pago={PH}, cliente_id={PH}, fornecedor_id={PH} WHERE id={PH}",
         (request.form["tipo"], int(request.form["quantidade"]),
          request.form.get("data") or hoje_brt(),
-         1 if request.form.get("pago") == "1" else 0, id)
+         1 if request.form.get("pago") == "1" else 0,
+         cliente_id, fornecedor_id, id)
     )
     return redirect(url_for("caixas"))
 
