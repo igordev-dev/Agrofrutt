@@ -414,7 +414,28 @@ def pagamento_venda(id):
 @app.route("/caixas")
 @login_required
 def caixas():
-    lista = query("SELECT * FROM caixas ORDER BY data DESC LIMIT 120")
+    try:
+        lista = query("SELECT * FROM caixas ORDER BY data DESC LIMIT 120")
+    except Exception:
+        # Tabela ainda não existe — cria agora
+        execute("""
+            CREATE TABLE IF NOT EXISTS caixas (
+                id SERIAL PRIMARY KEY,
+                tipo TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                data DATE DEFAULT CURRENT_DATE,
+                pago INTEGER NOT NULL DEFAULT 0
+            )
+        """ if DATABASE_URL else """
+            CREATE TABLE IF NOT EXISTS caixas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                data TEXT DEFAULT (date('now')),
+                pago INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        lista = []
     return render_template("caixas.html", caixas=lista, formatar_data_br=formatar_data_br)
 
 
@@ -700,9 +721,12 @@ def relatorio():
         ORDER BY e.produto
     """)
 
-    caixas_rel = query(f"""
-        SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC
-    """, params_cx)
+    try:
+        caixas_rel = query(f"""
+            SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC
+        """, params_cx)
+    except Exception:
+        caixas_rel = []
 
     return render_template("relatorio.html",
         vendas=vendas, faturamento=faturamento,
@@ -752,7 +776,10 @@ def relatorio_csv():
         ORDER BY c.data DESC
     """, params_c)
 
-    caixas_csv = query(f"SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC", params_cx)
+    try:
+        caixas_csv = query(f"SELECT * FROM caixas cx WHERE 1=1 {filtro_cx} ORDER BY cx.data DESC", params_cx)
+    except Exception:
+        caixas_csv = []
 
     output = io.StringIO()
     writer = csv.writer(output)
