@@ -495,26 +495,61 @@
       <table>
         <thead>
           <tr>
-            <th class="col-fit">Data</th>
             <th>Tipo</th>
-            <th class="col-fit col-center">Quantidade</th>
+            <th class="col-fit col-center">Total Registrado</th>
             <th class="col-fit col-center">Recebido</th>
+            <th class="col-fit col-center">Não Recebido</th>
           </tr>
         </thead>
         <tbody>
-          {% for cx in caixas_rel %}
+          {% set tipos = caixas_rel | map(attribute='tipo') | unique | list %}
+          {% for tipo in tipos %}
+          {% set itens_tipo = caixas_rel | selectattr('tipo', 'equalto', tipo) | list %}
           <tr>
-            <td class="col-fit">{{ formatar_data_br(cx.data) }}</td>
-            <td>{{ cx.tipo }}</td>
-            <td class="col-fit col-center">{{ cx.quantidade }}</td>
-            <td class="col-fit col-center">{% if cx.pago %}Sim{% else %}Não{% endif %}</td>
+            <td>{{ tipo }}</td>
+            <td class="col-fit col-center">{{ itens_tipo | sum(attribute='quantidade') }}</td>
+            <td class="col-fit col-center">{{ itens_tipo | selectattr('pago') | sum(attribute='quantidade') }}</td>
+            <td class="col-fit col-center">{{ itens_tipo | rejectattr('pago') | sum(attribute='quantidade') }}</td>
           </tr>
           {% else %}
           <tr><td colspan="4" class="td-empty">Nenhum registro de caixa no período.</td></tr>
           {% endfor %}
+          {% if tipos %}
+          <tr class="tr-total">
+            <td style="text-align:right">Total Geral</td>
+            <td class="col-fit col-center">{{ caixas_rel | sum(attribute='quantidade') }}</td>
+            <td class="col-fit col-center">{{ caixas_rel | selectattr('pago') | sum(attribute='quantidade') }}</td>
+            <td class="col-fit col-center">{{ caixas_rel | rejectattr('pago') | sum(attribute='quantidade') }}</td>
+          </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
+    <details style="margin-top:0.5rem">
+      <summary style="cursor:pointer;color:var(--green);font-size:0.85rem">Ver detalhes por data</summary>
+      <div class="table-wrap" style="margin-top:0.5rem">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-fit">Data</th>
+              <th>Tipo</th>
+              <th class="col-fit col-center">Quantidade</th>
+              <th class="col-fit col-center">Recebido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cx in caixas_rel %}
+            <tr>
+              <td class="col-fit">{{ formatar_data_br(cx.data) }}</td>
+              <td>{{ cx.tipo }}</td>
+              <td class="col-fit col-center">{{ cx.quantidade }}</td>
+              <td class="col-fit col-center">{% if cx.pago %}Sim{% else %}Não{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
   </div>
 
   {% endif %}

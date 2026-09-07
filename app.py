@@ -117,6 +117,15 @@ def init_db():
                 pago INTEGER NOT NULL DEFAULT 0
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS caixas (
+                id SERIAL PRIMARY KEY,
+                tipo TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                data DATE DEFAULT CURRENT_DATE,
+                pago INTEGER NOT NULL DEFAULT 0
+            )
+        """)
     else:
         db.executescript("""
             CREATE TABLE IF NOT EXISTS fornecedores (
@@ -151,32 +160,18 @@ def init_db():
                 data TEXT DEFAULT (date('now')),
                 pago INTEGER NOT NULL DEFAULT 0
             );
-        """)
-        try:
-            db.execute("ALTER TABLE estoque ADD COLUMN fornecedor_id INTEGER")
-        except Exception:
-            pass
-
-    if DATABASE_URL:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS caixas (
-                id SERIAL PRIMARY KEY,
-                tipo TEXT NOT NULL,
-                quantidade INTEGER NOT NULL,
-                data DATE DEFAULT CURRENT_DATE,
-                pago INTEGER NOT NULL DEFAULT 0
-            )
-        """)
-    else:
-        db.execute("""
             CREATE TABLE IF NOT EXISTS caixas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tipo TEXT NOT NULL,
                 quantidade INTEGER NOT NULL,
                 data TEXT DEFAULT (date('now')),
                 pago INTEGER NOT NULL DEFAULT 0
-            )
+            );
         """)
+        try:
+            db.execute("ALTER TABLE estoque ADD COLUMN fornecedor_id INTEGER")
+        except Exception:
+            pass
 
     for tabela in ("vendas", "compras"):
         try:
